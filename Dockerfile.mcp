@@ -1,0 +1,22 @@
+# Dockerfile for MT5 Playwright MCP Server
+# This runs separately from the main Vercel deployment
+FROM mcr.microsoft.com/playwright:v1.55.1-focal
+
+WORKDIR /app
+
+# Copy MCP server files
+COPY mcp-servers/mt5-playwright/package*.json ./
+COPY mcp-servers/mt5-playwright/tsconfig.json ./
+COPY mcp-servers/mt5-playwright/src ./src
+
+# Install dependencies
+RUN npm ci --only=production
+
+# Build TypeScript
+RUN npm run build
+
+# Expose port for HTTP API
+EXPOSE 3001
+
+# Start the MCP server with HTTP wrapper
+CMD ["node", "dist/index.js"]

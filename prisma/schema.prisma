@@ -1,0 +1,297 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DB_URL")
+}
+
+model User {
+  id                 String    @id @default(cuid())
+  email              String    @unique
+  name               String?
+  password           String
+  role               String    @default("USER")
+  isActive           Boolean   @default(true)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  lastLoginAt        DateTime?
+  failedLoginCount   Int       @default(0)
+  lockedUntil        DateTime?
+  passwordResetToken String?
+  emailVerified      Boolean   @default(false)
+
+  @@map("users")
+}
+
+model Lead {
+  id                  String               @id @default(cuid())
+  email               String?
+  firstName           String?
+  lastName            String?
+  phone               String?
+  broker              String?
+  source              String               @default("unknown")
+  status              String               @default("captured")
+  trackingToken       String?              @unique
+  leadCapturedAt      DateTime             @default(now())
+  depositedAt         DateTime?
+  tradingStartAt      DateTime?
+  qualifiedAt         DateTime?
+  ftdEarned           Float                @default(0)
+  cpaEarned           Float                @default(0)
+  totalEarned          Float                @default(0)
+  systemeContactId    String?
+  webhookData         String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  investorCredentials InvestorCredential[]
+  activities          LeadActivity[]
+
+  @@map("leads")
+}
+
+model InvestorCredential {
+  id             String        @id @default(cuid())
+  leadId         String?
+  login          String
+  password       String
+  server         String
+  broker         String        @default("Prime XBT")
+  isVerified     Boolean       @default(false)
+  verifiedAt     DateTime?
+  lastCheckedAt  DateTime?
+  balance        Float?        @default(0)
+  equity         Float?        @default(0)
+  margin         Float?        @default(0)
+  freeMargin     Float?        @default(0)
+  marginLevel    Float?        @default(0)
+  profit         Float?        @default(0)
+  totalVolume    Float?        @default(0)
+  lastTradeAt    DateTime?
+  meetsMinVolume Boolean       @default(false)
+  lastScrapedAt  DateTime?
+  scrapingStatus String        @default("pending")
+  scrapingError  String?
+  failedAttempts Int           @default(0)
+  maxFailedAttempts Int        @default(3)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  lead           Lead?         @relation(fields: [leadId], references: [id])
+  positions      MT5Position[]
+  trades         MT5Trade[]
+
+  @@map("investor_credentials")
+}
+
+model Integration {
+  id         String    @id @default(cuid())
+  name       String
+  type       String
+  status     String    @default("active")
+  apiKey     String?
+  webhookUrl String?
+  settings   String?
+  lastSyncAt DateTime?
+  syncCount  Int       @default(0)
+  errorCount Int       @default(0)
+  lastError  String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@map("integrations")
+}
+
+model ScrapingJob {
+  id                String                 @id @default(cuid())
+  name              String
+  description       String?
+  targetUrl         String
+  jobType           String                 @default("one-time")
+  schedule          String?
+  status            String                 @default("pending")
+  requiresAuth      Boolean                @default(false)
+  authProfileId     String?
+  extractionRules   String?
+  dataFormat        String                 @default("json")
+  triggerWorkflowId String?
+  feedDataRealtime  Boolean                @default(false)
+  maxRetries        Int                    @default(3)
+  timeout           Int                    @default(30000)
+  proxyEnabled      Boolean                @default(false)
+  stealthMode       Boolean                @default(true)
+  lastRunAt         DateTime?
+  nextRunAt         DateTime?
+  totalRuns         Int                    @default(0)
+  successfulRuns    Int                    @default(0)
+  failedRuns        Int                    @default(0)
+  lastError         String?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  scrapedData       ScrapedData[]
+  executions        ScrapingExecution[]
+  workflow          Workflow?              @relation(fields: [triggerWorkflowId], references: [id])
+  authProfile       AuthenticationProfile? @relation(fields: [authProfileId], references: [id])
+
+  @@map("scraping_jobs")
+}
+
+model AuthenticationProfile {
+  id             String        @id @default(cuid())
+  name           String
+  description    String?
+  targetDomain   String
+  authMethod     String        @default("form")
+  username       String?
+  password       String?
+  apiKey         String?
+  token          String?
+  cookieData     String?
+  requires2FA    Boolean       @default(false)
+  twoFAMethod    String?
+  twoFASecret    String?
+  sessionPersist Boolean       @default(true)
+  sessionTimeout Int           @default(3600)
+  lastUsedAt     DateTime?
+  isActive       Boolean       @default(true)
+  isVerified     Boolean       @default(false)
+  verifiedAt     DateTime?
+  failedAttempts Int           @default(0)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  scrapingJobs   ScrapingJob[]
+
+  @@map("authentication_profiles")
+}
+
+model ScrapingExecution {
+  id             String      @id @default(cuid())
+  jobId          String
+  status         String      @default("started")
+  startedAt      DateTime    @default(now())
+  completedAt    DateTime?
+  duration       Int?
+  itemsExtracted Int         @default(0)
+  bytesExtracted Int         @default(0)
+  errorMessage   String?
+  errorStack     String?
+  executionLog   String?
+  screenshot     String?
+  job            ScrapingJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@map("scraping_executions")
+}
+
+model ScrapedData {
+  id                String      @id @default(cuid())
+  jobId             String
+  sourceUrl         String
+  data              String
+  dataHash          String
+  quality           Float       @default(1.0)
+  triggeredWorkflow Boolean     @default(false)
+  workflowId        String?
+  extractedAt       DateTime    @default(now())
+  isProcessed       Boolean     @default(false)
+  processedAt       DateTime?
+  workflow          Workflow?   @relation(fields: [workflowId], references: [id])
+  job               ScrapingJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@map("scraped_data")
+}
+
+model Settings {
+  id        String   @id @default(cuid())
+  userId    String?
+  key       String
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, key])
+  @@map("settings")
+}
+
+model Workflow {
+  id                String        @id @default(cuid())
+  name              String
+  description       String?
+  type              String        @default("automation")
+  triggerType       String        @default("manual")
+  triggerConditions String?
+  steps             String
+  isActive          Boolean       @default(true)
+  totalRuns         Int           @default(0)
+  successfulRuns    Int           @default(0)
+  failedRuns        Int           @default(0)
+  lastRunAt         DateTime?
+  avgDuration       Int?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  scrapedData       ScrapedData[]
+  scrapingJobs      ScrapingJob[]
+
+  @@map("workflows")
+}
+
+model MT5Position {
+  id           String             @id @default(cuid())
+  credentialId String
+  ticket       String
+  symbol       String
+  type         String
+  volume       Float
+  openPrice    Float
+  currentPrice Float
+  profit       Float
+  openTime     DateTime
+  isOpen       Boolean            @default(true)
+  closedAt     DateTime?
+  closedPrice  Float?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  credential   InvestorCredential @relation(fields: [credentialId], references: [id], onDelete: Cascade)
+
+  @@unique([credentialId, ticket])
+  @@map("mt5_positions")
+}
+
+model MT5Trade {
+  id           String             @id @default(cuid())
+  credentialId String
+  ticket       String
+  symbol       String
+  type         String
+  volume       Float
+  openPrice    Float
+  closePrice   Float?
+  profit       Float?
+  commission   Float?             @default(0)
+  swap         Float?             @default(0)
+  openTime     DateTime
+  closeTime    DateTime?
+  isClosed     Boolean            @default(false)
+  comment      String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  credential   InvestorCredential @relation(fields: [credentialId], references: [id], onDelete: Cascade)
+
+  @@unique([credentialId, ticket])
+  @@map("mt5_trades")
+}
+
+model LeadActivity {
+  id            String   @id @default(cuid())
+  leadId        String
+  type          String
+  description   String
+  metadata      String?
+  previousValue String?
+  newValue      String?
+  amount        Float?   @default(0)
+  createdAt     DateTime @default(now())
+  lead          Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@map("lead_activities")
+}

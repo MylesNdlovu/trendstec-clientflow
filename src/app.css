@@ -1,0 +1,231 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+	:root {
+		/* Light theme variables */
+		--bg-primary: 255 255 255;
+		--bg-secondary: 249 250 251;
+		--bg-tertiary: 243 244 246;
+		--text-primary: 17 24 39;
+		--text-secondary: 75 85 99;
+		--text-tertiary: 156 163 175;
+		--border-primary: 229 231 235;
+		--accent-primary: 79 70 229;
+		--accent-secondary: 99 102 241;
+
+		/* Glass effect variables */
+		--glass-bg: rgba(255, 255, 255, 0.1);
+		--glass-border: rgba(255, 255, 255, 0.2);
+		--glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+		--backdrop-blur: 40px;
+	}
+
+	.dark {
+		/* Dark theme variables - Much darker/blacker */
+		--bg-primary: 0 0 0;
+		--bg-secondary: 10 10 10;
+		--bg-tertiary: 20 20 20;
+		--text-primary: 255 255 255;
+		--text-secondary: 220 220 220;
+		--text-tertiary: 160 160 160;
+		--border-primary: 40 40 40;
+		--accent-primary: 99 102 241;
+		--accent-secondary: 139 92 246;
+
+		/* Dark glass effect variables - Enhanced for true black theme */
+		--glass-bg: rgba(0, 0, 0, 0.6);
+		--glass-border: rgba(255, 255, 255, 0.08);
+		--glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+	}
+
+	* {
+		border-color: rgb(var(--border-primary));
+	}
+
+	body {
+		background-color: rgb(var(--bg-primary));
+		color: rgb(var(--text-primary));
+		transition: background-color 0.3s ease, color 0.3s ease;
+	}
+}
+
+@layer components {
+	/* Glassmorphism effects */
+	.glass {
+		background: var(--glass-bg);
+		backdrop-filter: blur(var(--backdrop-blur));
+		-webkit-backdrop-filter: blur(var(--backdrop-blur));
+		border: 1px solid var(--glass-border);
+		box-shadow: var(--glass-shadow);
+	}
+
+	.glass-card {
+		@apply glass rounded-2xl;
+	}
+
+	.glass-nav {
+		@apply glass rounded-3xl;
+	}
+
+	.glass-button {
+		@apply glass rounded-xl transition-all duration-300 hover:scale-105;
+		background: linear-gradient(135deg, var(--glass-bg), rgba(255, 255, 255, 0.05));
+	}
+
+	.glass-input {
+		@apply glass rounded-xl border-0 placeholder-gray-400;
+		background: rgba(255, 255, 255, 0.05);
+	}
+
+	/* iOS-style toggle switch */
+	.theme-toggle {
+		@apply relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2;
+		background: var(--glass-bg);
+		backdrop-filter: blur(20px);
+		border: 1px solid var(--glass-border);
+	}
+
+	.theme-toggle.dark {
+		background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(99, 102, 241, 0.3));
+	}
+
+	.theme-toggle-button {
+		@apply inline-block h-4 w-4 transform rounded-full transition-transform;
+		background: linear-gradient(135deg, #ffffff, #f1f5f9);
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), 0 1px 4px rgba(0, 0, 0, 0.1);
+	}
+
+	.dark .theme-toggle-button {
+		background: linear-gradient(135deg, #1e293b, #334155);
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(255, 255, 255, 0.1);
+	}
+
+	/* Enhanced card styling */
+	.enhanced-card {
+		@apply glass-card p-6 transition-all duration-300 hover:scale-[1.02];
+		background: linear-gradient(135deg, var(--glass-bg), rgba(255, 255, 255, 0.02));
+	}
+
+	/* Sidebar glassmorphism */
+	.glass-sidebar {
+		background: #000000;
+		border-right: 1px solid rgba(255, 255, 255, 0.1);
+	}
+
+	.dark .glass-sidebar {
+		background: #000000;
+	}
+
+	/* Navigation item hover effects */
+	.nav-item {
+		@apply relative transition-all duration-300;
+	}
+
+	.nav-item::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: linear-gradient(90deg,
+			rgba(79, 70, 229, 0.1) 0%,
+			rgba(99, 102, 241, 0.05) 100%);
+		border-radius: 0.5rem;
+		opacity: 0;
+		transition: opacity 0.3s ease;
+	}
+
+	.nav-item:hover::before,
+	.nav-item.active::before {
+		opacity: 1;
+	}
+
+	/* Enhanced modal styling */
+	.glass-modal {
+		background: var(--glass-bg);
+		backdrop-filter: blur(var(--backdrop-blur));
+		-webkit-backdrop-filter: blur(var(--backdrop-blur));
+		border: 1px solid var(--glass-border);
+		box-shadow: var(--glass-shadow);
+	}
+
+	/* Floating action button */
+	.fab {
+		@apply glass-button fixed bottom-6 right-6 w-14 h-14 flex items-center justify-center text-white z-50;
+		background: linear-gradient(135deg,
+			rgba(79, 70, 229, 0.8),
+			rgba(99, 102, 241, 0.6));
+	}
+
+	/* Stats card with glow effect */
+	.stats-card {
+		@apply enhanced-card relative overflow-hidden;
+	}
+
+	.stats-card::after {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 1px;
+		background: linear-gradient(90deg,
+			transparent,
+			rgba(79, 70, 229, 0.5),
+			transparent);
+		opacity: 0;
+		transition: opacity 0.3s ease;
+	}
+
+	.stats-card:hover::after {
+		opacity: 1;
+	}
+
+	/* iOS-style glass morphism for cards - Deep super black with glass effects */
+	.glass-card-ios {
+		background: rgba(0, 0, 0, 0.95);
+		backdrop-filter: blur(25px);
+		-webkit-backdrop-filter: blur(25px);
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		box-shadow:
+			0 8px 32px 0 rgba(0, 0, 0, 0.8),
+			inset 0 1px 0 rgba(255, 255, 255, 0.08),
+			0 0 0 1px rgba(255, 255, 255, 0.03);
+		transition: all 0.3s ease;
+	}
+
+	.glass-card-ios:hover {
+		background: rgba(0, 0, 0, 0.98);
+		border: 1px solid rgba(255, 255, 255, 0.15);
+		box-shadow:
+			0 12px 40px 0 rgba(0, 0, 0, 0.9),
+			inset 0 1px 0 rgba(255, 255, 255, 0.12),
+			0 0 0 1px rgba(255, 255, 255, 0.05),
+			0 0 20px rgba(255, 255, 255, 0.03);
+		transform: translateY(-2px);
+	}
+
+	/* Navigation hover effects */
+	.nav-item-glass {
+		@apply relative transition-all duration-300;
+		background: rgba(0, 0, 0, 0.3);
+		backdrop-filter: blur(10px);
+		-webkit-backdrop-filter: blur(10px);
+		border: 1px solid rgba(255, 255, 255, 0.05);
+	}
+
+	.nav-item-glass:hover {
+		background: rgba(255, 255, 255, 0.05);
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+	}
+
+	.nav-item-glass.active {
+		background: rgba(255, 255, 255, 0.08);
+		border: 1px solid rgba(255, 255, 255, 0.15);
+		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+	}
+}

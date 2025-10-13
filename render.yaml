@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: trendstec-mcp-server
+    env: docker
+    dockerfilePath: ./Dockerfile.mcp
+    plan: free
+    region: oregon
+    envVars:
+      - key: MCP_SERVER_PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production
+    healthCheckPath: /health
