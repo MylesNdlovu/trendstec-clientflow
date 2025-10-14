@@ -9,13 +9,13 @@ COPY mcp-servers/mt5-playwright/package*.json ./
 COPY mcp-servers/mt5-playwright/tsconfig.json ./
 COPY mcp-servers/mt5-playwright/src ./src
 
-# Install ALL dependencies (including TypeScript for build)
+# Install dependencies (including dev dependencies for build)
 RUN npm install
 
-# Build TypeScript
-RUN npm run build
+# Build TypeScript (use npx to ensure tsc is found)
+RUN npx tsc
 
-# Remove dev dependencies after build
+# Remove dev dependencies after build to reduce image size
 RUN npm prune --omit=dev
 
 # Expose port for HTTP API
