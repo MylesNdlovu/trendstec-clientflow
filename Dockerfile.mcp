@@ -10,7 +10,7 @@ COPY mcp-servers/mt5-playwright/tsconfig.json ./
 COPY mcp-servers/mt5-playwright/src ./src
 
 # Install dependencies
-RUN npm ci --only=production
+RUN npm install --omit=dev
 
 # Build TypeScript
 RUN npm run build
