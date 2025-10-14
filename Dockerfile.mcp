@@ -18,8 +18,8 @@ RUN npx tsc
 # Remove dev dependencies after build to reduce image size
 RUN npm prune --omit=dev
 
-# Expose port for HTTP API
-EXPOSE 3001
+# Expose port for HTTP API (Render uses PORT env variable)
+EXPOSE 10000
 
-# Start the MCP server with HTTP wrapper
-CMD ["node", "dist/index.js"]
+# Start the HTTP server (not stdio mode)
+CMD ["node", "dist/http-server.js"]
