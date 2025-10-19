@@ -13,7 +13,9 @@ export interface EncryptedData {
 
 export function encrypt(text: string): EncryptedData {
 	const iv = crypto.randomBytes(IV_LENGTH);
-	const cipher = crypto.createCipher(ALGORITHM, ENCRYPTION_KEY);
+	// Create a 32-byte key from the encryption key
+	const key = crypto.createHash('sha256').update(ENCRYPTION_KEY).digest();
+	const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
 	cipher.setAAD(Buffer.from('additional-auth-data'));
 
 	let encrypted = cipher.update(text, 'utf8', 'hex');
@@ -29,7 +31,9 @@ export function encrypt(text: string): EncryptedData {
 }
 
 export function decrypt(data: EncryptedData): string {
-	const decipher = crypto.createDecipher(ALGORITHM, ENCRYPTION_KEY);
+	// Create a 32-byte key from the encryption key
+	const key = crypto.createHash('sha256').update(ENCRYPTION_KEY).digest();
+	const decipher = crypto.createDecipheriv(ALGORITHM, key, Buffer.from(data.iv, 'hex'));
 	decipher.setAAD(Buffer.from('additional-auth-data'));
 	decipher.setAuthTag(Buffer.from(data.tag, 'hex'));
 

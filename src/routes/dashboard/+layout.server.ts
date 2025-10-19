@@ -1,13 +1,9 @@
 import type { LayoutServerLoad } from './$types';
+import { requireAuth } from '$lib/server/auth/middleware';
 
 export const load: LayoutServerLoad = async (event) => {
-	// Temporary mock user for development
-	const user = {
-		id: 'demo-user',
-		email: 'demo@example.com',
-		name: 'Demo User',
-		role: 'USER'
-	};
+	// Require authentication for all dashboard routes
+	const user = await requireAuth(event);
 
 	return {
 		user

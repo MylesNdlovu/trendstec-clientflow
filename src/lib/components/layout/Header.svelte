@@ -1,7 +1,20 @@
 <script lang="ts">
-	import { Bell, Search, User } from 'lucide-svelte';
+	import { Bell, Search, User, LogOut, Settings } from 'lucide-svelte';
 	import ThemeToggle from '$lib/components/ui/ThemeToggle.svelte';
+
+	let showUserMenu = false;
+
+	function toggleUserMenu(event: MouseEvent) {
+		event.stopPropagation();
+		showUserMenu = !showUserMenu;
+	}
+
+	function handleClickOutside() {
+		showUserMenu = false;
+	}
 </script>
+
+<svelte:window on:click={handleClickOutside} />
 
 <header class="bg-black border-b border-gray-800 sticky top-0 z-40">
 	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -45,17 +58,18 @@
 					<Bell class="h-5 w-5" />
 				</button>
 
-				<!-- Profile dropdown -->
-				<div class="relative">
-					<button
-						type="button"
-						class="glass-button flex items-center p-1 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-primary"
-					>
-						<span class="sr-only">Open user menu</span>
-						<div class="h-8 w-8 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-lg flex items-center justify-center">
-							<User class="h-4 w-4 text-white" />
-						</div>
-					</button>
+				<!-- Logout Button -->
+				<a
+					href="/logout"
+					class="flex items-center px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 rounded-lg transition-all"
+				>
+					<LogOut class="h-4 w-4 mr-2" />
+					Logout
+				</a>
+
+				<!-- Profile -->
+				<div class="h-8 w-8 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center">
+					<User class="h-4 w-4 text-white" />
 				</div>
 			</div>
 		</div>

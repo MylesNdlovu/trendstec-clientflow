@@ -1,8 +1,7 @@
 import { PrismaClient } from '@prisma/client';
-import path from 'path';
 import { decrypt } from '$lib/utils/encryption';
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { systemeService } from './systemeService';
+import { mcpClient } from './mcpClient';
 
 const prisma = new PrismaClient();
 
@@ -13,53 +12,7 @@ interface MT5ScraperResult {
 }
 
 class MT5ScraperService {
-	private mcpClient: Client | null = null;
-	private mcpTransport: StdioClientTransport | null = null;
-
-	/**
-	 * Connect to MCP server
-	 */
-	private async connectMCP(): Promise<void> {
-		if (this.mcpClient) return; // Already connected
-
-		const mcpServerPath = path.join(
-			process.cwd(),
-			'mcp-servers/mt5-playwright/dist/index.js'
-		);
-
-		// Create stdio transport
-		this.mcpTransport = new StdioClientTransport({
-			command: 'node',
-			args: [mcpServerPath]
-		});
-
-		// Create MCP client
-		this.mcpClient = new Client(
-			{
-				name: 'mt5-scraper-client',
-				version: '1.0.0'
-			},
-			{
-				capabilities: {}
-			}
-		);
-
-		// Connect to server
-		await this.mcpClient.connect(this.mcpTransport);
-		console.log('✅ Connected to MCP MT5 server');
-	}
-
-	/**
-	 * Disconnect from MCP server
-	 */
-	private async disconnectMCP(): Promise<void> {
-		if (this.mcpClient) {
-			await this.mcpClient.close();
-			this.mcpClient = null;
-			this.mcpTransport = null;
-			console.log('🔌 Disconnected from MCP MT5 server');
-		}
-	}
+	// Removed local MCP client - now using remote mcpClient service
 
 	/**
 	 * Get MT5 web URL for a specific broker from settings
@@ -106,31 +59,11 @@ class MT5ScraperService {
 		}
 	}
 
-	/**
-	 * Call MCP tool through the MCP server
-	 */
-	private async callMCPTool(toolName: string, args: any = {}): Promise<any> {
-		try {
-			await this.connectMCP();
-
-			if (!this.mcpClient) {
-				throw new Error('MCP client not connected');
-			}
-
-			const result = await this.mcpClient.callTool({
-				name: toolName,
-				arguments: args
-			});
-
-			return result;
-		} catch (error) {
-			console.error(`MCP tool call error (${toolName}):`, error);
-			throw error;
-		}
-	}
+	// Removed callMCPTool - now using remote mcpClient.scrapeMT5Account()
 
 	/**
 	 * Scrape MT5 account data for a specific investor credential with retry logic
+	 * Now using remote MCP server via mcpClient
 	 */
 	async scrapeAccountData(credentialId: string, retryCount: number = 0): Promise<MT5ScraperResult> {
 		const MAX_RETRIES = 2;
@@ -148,27 +81,23 @@ class MT5ScraperService {
 
 			console.log(`🔄 Scraping MT5 account for login: ${credential.login} (attempt ${retryCount + 1}/${MAX_RETRIES + 1})`);
 
-			// Login to MT5 (decrypt password first)
+			// Decrypt password
 			const decryptedPassword = decrypt(credential.password);
 
 			// Get broker MT5 URL from settings
 			const brokerUrl = await this.getBrokerMT5Url(credential.broker);
 
-			const loginResult = await this.callMCPTool('mt5_login', {
+			// Use remote MCP client to scrape account
+			const scrapeResult = await mcpClient.scrapeMT5Account({
 				username: credential.login,
 				password: decryptedPassword,
 				server: credential.server,
-				url: brokerUrl
+				brokerUrl: brokerUrl
 			});
 
-			// Parse login result
-			const loginData = typeof loginResult.content === 'string'
-				? JSON.parse(loginResult.content)
-				: JSON.parse(loginResult.content[0]?.text || '{}');
-
-			if (!loginData.success) {
-				const errorMsg = loginData.message || 'Login failed';
-				console.error(`❌ MT5 login failed for ${credential.login}: ${errorMsg}`);
+			if (!scrapeResult.success) {
+				const errorMsg = scrapeResult.error || 'Scraping failed';
+				console.error(`❌ MT5 scraping failed for ${credential.login}: ${errorMsg}`);
 
 				// Retry on certain errors
 				if (retryCount < MAX_RETRIES && this.isRetryableError(errorMsg)) {
@@ -183,30 +112,21 @@ class MT5ScraperService {
 				return { success: false, error: errorMsg };
 			}
 
-			console.log(`✅ MT5 login successful for ${credential.login}`);
+			console.log(`✅ MT5 scraping successful for ${credential.login}`);
 
-			// Get account data
-			const accountData = await this.callMCPTool('mt5_get_account_data');
-
-			if (!accountData.success) {
-				await this.updateCredentialScrapingStatus(credentialId, 'failed', accountData.message);
-				return { success: false, error: accountData.message };
-			}
-
-			// Get positions
-			const positionsData = await this.callMCPTool('mt5_get_positions');
-			const positions = positionsData.success ? positionsData.data : [];
+			const accountData = scrapeResult.data;
+			const positions = accountData.positions || [];
 
 			// Update credential with scraped data
 			await prisma.investorCredential.update({
 				where: { id: credentialId },
 				data: {
-					balance: accountData.data.balance,
-					equity: accountData.data.equity,
-					margin: accountData.data.margin,
-					freeMargin: accountData.data.freeMargin,
-					marginLevel: accountData.data.marginLevel,
-					profit: accountData.data.profit,
+					balance: accountData.balance,
+					equity: accountData.equity,
+					margin: accountData.margin,
+					freeMargin: accountData.freeMargin,
+					marginLevel: accountData.marginLevel,
+					profit: accountData.profit,
 					lastScrapedAt: new Date(),
 					scrapingStatus: 'success',
 					scrapingError: null,
@@ -261,17 +181,13 @@ class MT5ScraperService {
 
 			// Update lead status if needed
 			if (credential.leadId) {
-				await this.updateLeadStatus(credential.leadId, accountData.data, totalVolume);
+				await this.updateLeadStatus(credential.leadId, accountData, totalVolume);
 			}
-
-			// Logout and cleanup
-			await this.callMCPTool('mt5_logout');
-			await this.disconnectMCP();
 
 			return {
 				success: true,
 				data: {
-					accountData: accountData.data,
+					accountData,
 					positions,
 					totalVolume,
 					meetsMinVolume
@@ -280,9 +196,6 @@ class MT5ScraperService {
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 			await this.updateCredentialScrapingStatus(credentialId, 'failed', errorMessage);
-
-			// Cleanup connection on error
-			await this.disconnectMCP();
 
 			return { success: false, error: errorMessage };
 		}
@@ -473,6 +386,81 @@ class MT5ScraperService {
 				where: { id: leadId },
 				data: updates
 			});
+		}
+
+		// Sync status to Systeme.io tags
+		await this.syncLeadStatusToSysteme(lead, accountData, totalVolume);
+	}
+
+	/**
+	 * Sync lead status to Systeme.io tags after scraping
+	 */
+	private async syncLeadStatusToSysteme(
+		lead: any,
+		accountData: any,
+		totalVolume: number
+	): Promise<void> {
+		// Only sync if lead has email and came from Systeme.io
+		if (!lead.email || lead.source !== 'systeme.io') {
+			console.log(`⏭️  Skipping Systeme.io sync for ${lead.email || 'unknown'} (source: ${lead.source})`);
+			return;
+		}
+
+		try {
+			// Get total trades count from positions
+			// Fix: Need to get credentials first, then count their positions
+			const credentials = await prisma.investorCredential.findMany({
+				where: {
+					leadId: lead.id
+				},
+				select: {
+					id: true
+				}
+			});
+
+			const credentialIds = credentials.map(c => c.id);
+
+			const positionsCount = await prisma.mT5Position.count({
+				where: {
+					credentialId: {
+						in: credentialIds
+					}
+				}
+			});
+
+			const hasDeposited = accountData.balance > 0;
+			const isTrading = totalVolume > 0;
+			const isQualified = totalVolume >= 0.2;
+
+			console.log(`🔄 Syncing status to Systeme.io for ${lead.email}:`, {
+				hasDeposited,
+				isTrading,
+				isQualified,
+				balance: accountData.balance,
+				volume: totalVolume,
+				trades: positionsCount
+			});
+
+			// Update Systeme.io tags
+			const result = await systemeService.updateLeadStatusTags(lead.email, {
+				hasDeposited,
+				isTrading,
+				isQualified,
+				balance: accountData.balance,
+				totalVolume,
+				totalTrades: positionsCount
+			});
+
+			if (result.success) {
+				console.log(`✅ Systeme.io tags synced successfully for ${lead.email}`);
+			} else {
+				console.error(`❌ Failed to sync Systeme.io tags for ${lead.email}:`, result.error);
+			}
+
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+			console.error(`❌ Error syncing to Systeme.io for ${lead.email}:`, errorMessage);
+			// Don't throw - scraping should continue even if Systeme.io sync fails
 		}
 	}
 }

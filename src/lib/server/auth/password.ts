@@ -1,8 +1,10 @@
-import bcrypt from 'bcryptjs';
-import { BCRYPT_ROUNDS } from '$lib/config/env';
+import bcrypt from 'bcrypt';
+import { randomBytes } from 'crypto';
+
+const SALT_ROUNDS = 12;
 
 export async function hashPassword(password: string): Promise<string> {
-	return bcrypt.hash(password, BCRYPT_ROUNDS);
+	return bcrypt.hash(password, SALT_ROUNDS);
 }
 
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
@@ -39,4 +41,20 @@ export function validatePasswordStrength(password: string): {
 		isValid: errors.length === 0,
 		errors
 	};
+}
+
+/**
+ * Generate a secure random token for password reset
+ */
+export function generateResetToken(): string {
+	return randomBytes(32).toString('hex');
+}
+
+/**
+ * Generate password reset expiry (1 hour from now)
+ */
+export function generateResetExpiry(): Date {
+	const expiry = new Date();
+	expiry.setHours(expiry.getHours() + 1);
+	return expiry;
 }

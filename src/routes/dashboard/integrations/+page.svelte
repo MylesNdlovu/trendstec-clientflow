@@ -690,6 +690,71 @@
 			</div>
 		</div>
 
+		<!-- Email Integration (Mailgun) -->
+		<div class="glass-card-ios rounded-2xl p-6 shadow-xl border-2 border-orange-500/30">
+			<div class="flex items-center justify-between mb-6">
+				<div class="flex items-center space-x-3">
+					<div class="w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl flex items-center justify-center">
+						<Mail class="w-6 h-6 text-white" />
+					</div>
+					<div>
+						<h2 class="text-xl font-bold text-white">Email Service</h2>
+						<p class="text-sm text-gray-400">Email verification, password resets, and transactional emails</p>
+					</div>
+				</div>
+				<a
+					href="/dashboard/integrations/email"
+					class="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all font-medium"
+				>
+					<Settings class="w-4 h-4" />
+					Configure
+				</a>
+			</div>
+
+			<div class="space-y-4">
+				<p class="text-sm text-gray-300">
+					Configure Mailgun to enable email functionality for your application:
+				</p>
+
+				<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+					<div class="bg-black/50 border border-orange-500/20 rounded-lg p-4">
+						<div class="flex items-center space-x-2 mb-2">
+							<Mail class="w-4 h-4 text-orange-500" />
+							<h3 class="text-sm font-semibold text-white">Email Verification</h3>
+						</div>
+						<p class="text-xs text-gray-400">Verify user email addresses on signup</p>
+					</div>
+
+					<div class="bg-black/50 border border-orange-500/20 rounded-lg p-4">
+						<div class="flex items-center space-x-2 mb-2">
+							<Mail class="w-4 h-4 text-orange-500" />
+							<h3 class="text-sm font-semibold text-white">Password Reset</h3>
+						</div>
+						<p class="text-xs text-gray-400">Send secure password reset links</p>
+					</div>
+
+					<div class="bg-black/50 border border-orange-500/20 rounded-lg p-4">
+						<div class="flex items-center space-x-2 mb-2">
+							<Mail class="w-4 h-4 text-orange-500" />
+							<h3 class="text-sm font-semibold text-white">Welcome Emails</h3>
+						</div>
+						<p class="text-xs text-gray-400">Onboard new users with welcome messages</p>
+					</div>
+				</div>
+
+				<div class="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
+					<p class="text-sm text-orange-300 mb-2">
+						<strong>Setup Required:</strong> Click the "Configure" button above to enter your Mailgun API credentials and enable email functionality.
+					</p>
+					<ul class="text-xs text-orange-200 space-y-1 ml-4 list-disc">
+						<li>Get a free Mailgun account at <a href="https://www.mailgun.com" target="_blank" class="underline">mailgun.com</a></li>
+						<li>Add your API key and domain in the configuration page</li>
+						<li>Test the connection to verify everything works</li>
+					</ul>
+				</div>
+			</div>
+		</div>
+
 		<!-- Integrations Grid -->
 		{#if loading}
 			<div class="flex items-center justify-center py-12">

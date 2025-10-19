@@ -9,7 +9,7 @@ const prisma = new PrismaClient();
  * GET /api/leads
  * Get all leads with their stats, or single lead by token
  */
-export const GET: RequestHandler = async ({ url }) => {
+export const GET: RequestHandler = async ({ url, locals }) => {
 	try {
 		const token = url.searchParams.get('token');
 
@@ -34,10 +34,23 @@ export const GET: RequestHandler = async ({ url }) => {
 			return json({ lead });
 		}
 
+		// Multi-tenant isolation: Get current user
+		const user = locals.user;
+		if (!user) {
+			return json({ error: 'Unauthorized' }, { status: 401 });
+		}
+
 		const status = url.searchParams.get('status');
 		const broker = url.searchParams.get('broker');
 
 		const where: any = {};
+
+		// If IB role, only show their leads
+		if (user.role === 'IB') {
+			where.userId = user.id;
+		}
+		// If ADMIN, show all leads (where clause stays empty for userId)
+
 		if (status) where.status = status;
 		if (broker) where.broker = broker;
 
@@ -110,12 +123,15 @@ export const GET: RequestHandler = async ({ url }) => {
  * POST /api/leads
  * Create a new lead
  */
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, locals }) => {
 	try {
 		const body = await request.json();
+		const user = locals.user;
 
 		const lead = await prisma.lead.create({
 			data: {
+				userId: user?.id || null,  // Link to IB if logged in
+				leadType: body.leadType || 'trader',  // Default to trader
 				email: body.email,
 				firstName: body.firstName,
 				lastName: body.lastName,

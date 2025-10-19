@@ -5,6 +5,12 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DB_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  IB      // Independent Broker/Affiliate (previously USER)
+  ADMIN   // Platform administrator (merged SUPER_ADMIN into this)
 }
 
 model User {
@@ -12,7 +18,7 @@ model User {
   email              String    @unique
   name               String?
   password           String
-  role               String    @default("USER")
+  role               Role      @default(IB)
   isActive           Boolean   @default(true)
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
@@ -20,35 +26,59 @@ model User {
   failedLoginCount   Int       @default(0)
   lockedUntil        DateTime?
   passwordResetToken String?
+  passwordResetExpiry DateTime?
   emailVerified      Boolean   @default(false)
+
+  // Relations
+  leads              Lead[]    // Trader leads owned by this IB
 
   @@map("users")
 }
 
 model Lead {
   id                  String               @id @default(cuid())
+
+  // Multi-tenant isolation
+  userId              String?              // IB who owns this lead (null for platform's IB leads)
+  user                User?                @relation(fields: [userId], references: [id])
+  leadType            String               @default("trader")  // "ib" or "trader"
+
+  // Contact info
   email               String?
   firstName           String?
   lastName            String?
   phone               String?
+
+  // Lead details
   broker              String?
   source              String               @default("unknown")
   status              String               @default("captured")
   trackingToken       String?              @unique
+
+  // Timestamps
   leadCapturedAt      DateTime             @default(now())
   depositedAt         DateTime?
   tradingStartAt      DateTime?
   qualifiedAt         DateTime?
+
+  // Commission tracking (for trader leads)
   ftdEarned           Float                @default(0)
   cpaEarned           Float                @default(0)
-  totalEarned          Float                @default(0)
+  totalEarned         Float                @default(0)
+
+  // Integration
   systemeContactId    String?
   webhookData         String?
+
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
+
+  // Relations
   investorCredentials InvestorCredential[]
   activities          LeadActivity[]
 
+  @@index([userId])
+  @@index([leadType])
   @@map("leads")
 }
 

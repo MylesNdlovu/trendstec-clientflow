@@ -154,7 +154,47 @@ class SystemeService {
 	}
 
 	/**
-	 * Add tags to a contact
+	 * Get or create a tag by name and return its ID
+	 */
+	async getOrCreateTagId(tagName: string): Promise<string | null> {
+		try {
+			this.setAuthHeaders();
+
+			// First, try to find existing tag
+			const listResponse = await systemeApiClient.request({
+				method: 'GET',
+				endpoint: '/tags'
+			});
+
+			if (listResponse.success && listResponse.data?.items) {
+				const existingTag = listResponse.data.items.find(
+					(t: any) => t.name === tagName || t.label === tagName
+				);
+				if (existingTag) {
+					return existingTag.id;
+				}
+			}
+
+			// Tag doesn't exist, create it
+			const createResponse = await systemeApiClient.request({
+				method: 'POST',
+				endpoint: '/tags',
+				body: { name: tagName }
+			});
+
+			if (createResponse.success && createResponse.data?.id) {
+				return createResponse.data.id;
+			}
+
+			return null;
+		} catch (error) {
+			console.error(`Failed to get/create tag "${tagName}":`, error);
+			return null;
+		}
+	}
+
+	/**
+	 * Add tags to a contact (using correct API format with tag IDs)
 	 */
 	async addTagsToContact(contactId: string, tags: string[]): Promise<SystemeApiResponse<any>> {
 		try {
@@ -162,15 +202,31 @@ class SystemeService {
 
 			const results = [];
 
-			for (const tag of tags) {
+			for (const tagName of tags) {
+				// Get or create tag to get its ID
+				const tagId = await this.getOrCreateTagId(tagName);
+
+				if (!tagId) {
+					results.push({
+						tag: tagName,
+						success: false,
+						error: 'Failed to get or create tag'
+					});
+					continue;
+				}
+
+				// Add tag to contact using correct API endpoint
 				const response = await systemeApiClient.request({
 					method: 'POST',
-					endpoint: `/contacts/${contactId}/tags`,
-					body: { tag_name: tag }
+					endpoint: '/contacts/tag',
+					body: {
+						contactId: contactId,
+						tagId: tagId
+					}
 				});
 
 				results.push({
-					tag,
+					tag: tagName,
 					success: response.success,
 					error: response.error
 				});
@@ -195,7 +251,7 @@ class SystemeService {
 	}
 
 	/**
-	 * Remove tags from a contact
+	 * Remove tags from a contact (using correct API format with tag IDs)
 	 */
 	async removeTagsFromContact(contactId: string, tags: string[]): Promise<SystemeApiResponse<any>> {
 		try {
@@ -203,14 +259,45 @@ class SystemeService {
 
 			const results = [];
 
-			for (const tag of tags) {
+			for (const tagName of tags) {
+				// Get tag ID (don't create if it doesn't exist)
+				const listResponse = await systemeApiClient.request({
+					method: 'GET',
+					endpoint: '/tags'
+				});
+
+				let tagId: string | null = null;
+				if (listResponse.success && listResponse.data?.items) {
+					const existingTag = listResponse.data.items.find(
+						(t: any) => t.name === tagName || t.label === tagName
+					);
+					if (existingTag) {
+						tagId = existingTag.id;
+					}
+				}
+
+				if (!tagId) {
+					// Tag doesn't exist, so it's already "removed"
+					results.push({
+						tag: tagName,
+						success: true,
+						error: null
+					});
+					continue;
+				}
+
+				// Remove tag from contact using correct API endpoint
 				const response = await systemeApiClient.request({
 					method: 'DELETE',
-					endpoint: `/contacts/${contactId}/tags/${encodeURIComponent(tag)}`
+					endpoint: '/contacts/tag',
+					body: {
+						contactId: contactId,
+						tagId: tagId
+					}
 				});
 
 				results.push({
-					tag,
+					tag: tagName,
 					success: response.success,
 					error: response.error
 				});
@@ -423,6 +510,281 @@ class SystemeService {
 	 */
 	async retryFailedRequests(queueKey?: string) {
 		return await systemeApiClient.retryFailedRequests(queueKey);
+	}
+
+	/**
+	 * Update lead status tags in Systeme.io based on MT5 scraping results
+	 */
+	async updateLeadStatusTags(
+		email: string,
+		status: {
+			hasDeposited: boolean;
+			isTrading: boolean;
+			isQualified: boolean;
+			balance?: number;
+			totalVolume?: number;
+			totalTrades?: number;
+		}
+	): Promise<SystemeApiResponse<{
+		tagsAdded: string[];
+		tagsRemoved: string[];
+	}>> {
+		try {
+			// Step 1: Find contact by email
+			const findResult = await this.findContactByEmail(email);
+			if (!findResult.success || !findResult.data) {
+				return {
+					success: false,
+					error: `Contact not found: ${email}`
+				};
+			}
+
+			const contact = findResult.data;
+			const tagsToAdd: string[] = [];
+			const tagsToRemove: string[] = [];
+
+			// Determine deposit status tags
+			if (status.hasDeposited) {
+				tagsToAdd.push('Deposited');
+				tagsToRemove.push('Not_Deposited');
+			} else {
+				tagsToAdd.push('Not_Deposited');
+				tagsToRemove.push('Deposited');
+			}
+
+			// Determine trading status tags
+			if (status.isTrading) {
+				tagsToAdd.push('Trading');
+				tagsToRemove.push('Not_Trading');
+			} else {
+				tagsToAdd.push('Not_Trading');
+				tagsToRemove.push('Trading');
+			}
+
+			// Determine qualification status tags
+			if (status.isQualified) {
+				tagsToAdd.push('Qualified');
+				tagsToAdd.push('Min_Volume_Met');
+				tagsToRemove.push('Not_Qualified');
+			} else {
+				tagsToAdd.push('Not_Qualified');
+				tagsToRemove.push('Qualified', 'Min_Volume_Met');
+			}
+
+			// Add volume tier tags if trading
+			if (status.totalVolume !== undefined && status.totalVolume > 0) {
+				if (status.totalVolume >= 1.0) {
+					tagsToAdd.push('High_Volume_Trader');
+				} else if (status.totalVolume >= 0.5) {
+					tagsToAdd.push('Medium_Volume_Trader');
+				} else if (status.totalVolume >= 0.2) {
+					tagsToAdd.push('Low_Volume_Trader');
+				}
+			}
+
+			// Update custom fields with latest metrics
+			await this.updateContactMT5Credentials(
+				contact.id,
+				{
+					email: contact.email,
+					mt5Login: contact.custom_fields.mt5_login || '',
+					mt5Server: contact.custom_fields.mt5_server || ''
+				},
+				{
+					last_scraped_at: new Date().toISOString(),
+					mt5_balance: status.balance,
+					mt5_total_volume: status.totalVolume,
+					mt5_total_trades: status.totalTrades,
+					mt5_status: status.isQualified ? 'qualified' : status.isTrading ? 'trading' : status.hasDeposited ? 'deposited' : 'no_deposit'
+				}
+			);
+
+			// Remove old status tags first
+			if (tagsToRemove.length > 0) {
+				const removeResult = await this.removeTagsFromContact(contact.id, tagsToRemove);
+				console.log(`🏷️ Removed tags from ${email}:`, tagsToRemove);
+			}
+
+			// Add new status tags
+			if (tagsToAdd.length > 0) {
+				const addResult = await this.addTagsToContact(contact.id, tagsToAdd);
+				console.log(`🏷️ Added tags to ${email}:`, tagsToAdd);
+			}
+
+			console.log(`✅ Systeme.io tags updated for ${email}:`, {
+				added: tagsToAdd,
+				removed: tagsToRemove,
+				balance: status.balance,
+				volume: status.totalVolume,
+				qualified: status.isQualified
+			});
+
+			return {
+				success: true,
+				data: {
+					tagsAdded: tagsToAdd,
+					tagsRemoved: tagsToRemove
+				}
+			};
+
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+			return {
+				success: false,
+				error: `Failed to update status tags: ${errorMessage}`
+			};
+		}
+	}
+
+	/**
+	 * Create a new tag in Systeme.io
+	 */
+	async createTag(tagName: string): Promise<SystemeApiResponse<any>> {
+		try {
+			this.setAuthHeaders();
+
+			const response = await systemeApiClient.request({
+				method: 'POST',
+				endpoint: '/tags',
+				body: { name: tagName }
+			});
+
+			return response;
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+			return {
+				success: false,
+				error: `Failed to create tag: ${errorMessage}`
+			};
+		}
+	}
+
+	/**
+	 * Create a new custom field in Systeme.io
+	 */
+	async createCustomField(field: {
+		slug: string;
+		label: string;
+		type: 'text' | 'number' | 'date' | 'email' | 'phone';
+	}): Promise<SystemeApiResponse<any>> {
+		try {
+			this.setAuthHeaders();
+
+			const response = await systemeApiClient.request({
+				method: 'POST',
+				endpoint: '/contact-fields',
+				body: {
+					slug: field.slug,
+					label: field.label,
+					type: field.type
+				}
+			});
+
+			return response;
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+			return {
+				success: false,
+				error: `Failed to create custom field: ${errorMessage}`
+			};
+		}
+	}
+
+	/**
+	 * Create a webhook in Systeme.io
+	 */
+	async createWebhook(config: {
+		url: string;
+		events: string[];
+		active?: boolean;
+	}): Promise<SystemeApiResponse<any>> {
+		try {
+			this.setAuthHeaders();
+
+			const response = await systemeApiClient.request({
+				method: 'POST',
+				endpoint: '/webhooks',
+				body: {
+					url: config.url,
+					events: config.events,
+					active: config.active !== false
+				}
+			});
+
+			return response;
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+			return {
+				success: false,
+				error: `Failed to create webhook: ${errorMessage}`
+			};
+		}
+	}
+
+	/**
+	 * Get all existing tags
+	 */
+	async getAllTags(): Promise<SystemeApiResponse<any[]>> {
+		try {
+			this.setAuthHeaders();
+
+			const response = await systemeApiClient.request({
+				method: 'GET',
+				endpoint: '/tags'
+			});
+
+			return response;
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+			return {
+				success: false,
+				error: `Failed to get tags: ${errorMessage}`
+			};
+		}
+	}
+
+	/**
+	 * Get all existing custom fields
+	 */
+	async getAllCustomFields(): Promise<SystemeApiResponse<any[]>> {
+		try {
+			this.setAuthHeaders();
+
+			const response = await systemeApiClient.request({
+				method: 'GET',
+				endpoint: '/contact-fields'
+			});
+
+			return response;
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+			return {
+				success: false,
+				error: `Failed to get custom fields: ${errorMessage}`
+			};
+		}
+	}
+
+	/**
+	 * Get all existing webhooks
+	 */
+	async getAllWebhooks(): Promise<SystemeApiResponse<any[]>> {
+		try {
+			this.setAuthHeaders();
+
+			const response = await systemeApiClient.request({
+				method: 'GET',
+				endpoint: '/webhooks'
+			});
+
+			return response;
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+			return {
+				success: false,
+				error: `Failed to get webhooks: ${errorMessage}`
+			};
+		}
 	}
 }
 

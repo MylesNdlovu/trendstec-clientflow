@@ -1,7 +1,7 @@
 import type { RequestEvent } from '@sveltejs/kit';
 import { verifyJWT, type JWTPayload } from './jwt';
 import prisma from '$lib/config/database';
-import { error } from '@sveltejs/kit';
+import { error, redirect } from '@sveltejs/kit';
 
 export interface AuthenticatedUser {
 	id: string;
@@ -19,7 +19,7 @@ export async function authenticate(event: RequestEvent): Promise<AuthenticatedUs
 	}
 
 	const payload = verifyJWT(token);
-	if (!payload) {
+	if (!payload || !payload.userId) {
 		return null;
 	}
 
@@ -45,7 +45,8 @@ export async function authenticate(event: RequestEvent): Promise<AuthenticatedUs
 export async function requireAuth(event: RequestEvent): Promise<AuthenticatedUser> {
 	const user = await authenticate(event);
 	if (!user) {
-		throw error(401, 'Authentication required');
+		// Redirect to login instead of showing error
+		throw redirect(303, `/login?redirect=${encodeURIComponent(event.url.pathname)}`);
 	}
 	return user;
 }
@@ -61,14 +62,18 @@ export async function requireRole(event: RequestEvent, allowedRoles: string[]): 
 }
 
 export async function requireAdmin(event: RequestEvent): Promise<AuthenticatedUser> {
-	return requireRole(event, ['ADMIN', 'SUPER_ADMIN']);
+	return requireRole(event, ['ADMIN']);
+}
+
+export async function requireIB(event: RequestEvent): Promise<AuthenticatedUser> {
+	return requireRole(event, ['IB']);
 }
 
 export function setAuthCookie(event: RequestEvent, token: string): void {
 	event.cookies.set('auth-token', token, {
 		path: '/',
 		httpOnly: true,
-		secure: true,
+		secure: process.env.NODE_ENV === 'production', // Only require HTTPS in production
 		sameSite: 'strict',
 		maxAge: 60 * 60 * 24 * 7 // 7 days
 	});

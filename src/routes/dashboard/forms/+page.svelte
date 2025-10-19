@@ -42,6 +42,19 @@
 	let copySuccess = false;
 	let showPassword = false;
 
+	// Optin Form State
+	let optinData = {
+		email: '',
+		firstName: '',
+		lastName: '',
+		phone: ''
+	};
+	let optinSubmitting = false;
+	let optinSubmitted = false;
+	let optinError = '';
+	let showOptinEmbedCode = false;
+	let optinCopySuccess = false;
+
 	// Real-time validation state
 	let validating = false;
 	let validationResult = null;
@@ -151,9 +164,9 @@
 		}, 1500); // 1.5 second delay for debouncing
 	}
 
-	// Reactive validation trigger
-	$: if (formData.login || formData.password || formData.server || formData.broker) {
-		validateCredentials();
+	// Manual validation function (no auto-trigger)
+	async function manualValidate() {
+		await validateCredentials();
 	}
 
 	// Reactive theme classes
@@ -181,7 +194,7 @@
 
 			if (response.ok) {
 				submitted = true;
-				// Sync with Systeme.io
+				// Sync with Workflow Backend
 				await syncWithSysteme();
 			} else {
 				throw new Error('Failed to submit form');
@@ -217,7 +230,7 @@
 				})
 			});
 		} catch (err) {
-			console.error('Systeme.io sync error:', err);
+			console.error('Workflow Backend sync error:', err);
 		}
 	}
 
@@ -259,7 +272,7 @@
 	}
 
 	function getEmbedCode() {
-		const origin = typeof window !== 'undefined' ? window.location.origin : 'https://your-domain.com';
+		const origin = typeof window !== 'undefined' ? window.location.origin : 'https://my-svelte-79a8i428b-myles-projects-dd515697.vercel.app';
 		return `<!-- MT5 Investor Credentials Form -->
 <iframe
 	src="${origin}/forms/mt5-investor"
@@ -273,7 +286,7 @@
 <script>
 (function() {
 	var iframe = document.createElement('iframe');
-	iframe.src = window.location.origin + '/forms/mt5-investor';
+	iframe.src = '${origin}/forms/mt5-investor';
 	iframe.style.width = '100%';
 	iframe.style.height = '800px';
 	iframe.style.border = 'none';
@@ -283,6 +296,79 @@
 })();
 <\/script>`;
 	}
+
+	// Optin Form Functions
+	async function submitOptinForm() {
+		optinSubmitting = true;
+		optinError = '';
+
+		try {
+			const response = await fetch('/api/systeme/contacts', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					email: optinData.email,
+					fields: [
+						{ slug: 'first_name', value: optinData.firstName },
+						{ slug: 'last_name', value: optinData.lastName },
+						{ slug: 'phone', value: optinData.phone }
+					],
+					tags: ['optin-lead', 'website-signup']
+				})
+			});
+
+			if (response.ok) {
+				optinSubmitted = true;
+			} else {
+				throw new Error('Failed to submit optin form');
+			}
+		} catch (err) {
+			optinError = 'Failed to submit form. Please try again.';
+			console.error('Optin form submission error:', err);
+		} finally {
+			optinSubmitting = false;
+		}
+	}
+
+	function toggleOptinEmbedCode() {
+		showOptinEmbedCode = !showOptinEmbedCode;
+	}
+
+	function copyOptinEmbedCode() {
+		const embedCode = getOptinEmbedCode();
+		navigator.clipboard.writeText(embedCode).then(() => {
+			optinCopySuccess = true;
+			setTimeout(() => optinCopySuccess = false, 2000);
+		});
+	}
+
+	function getOptinEmbedCode() {
+		const origin = typeof window !== 'undefined' ? window.location.origin : 'https://your-domain.com';
+		return `<!-- Lead Optin Form -->
+<iframe
+	src="${origin}/forms/optin"
+	width="100%"
+	height="600"
+	frameborder="0"
+	style="border: none; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+</iframe>`;
+	}
+
+	function getOptinFormURL() {
+		const origin = typeof window !== 'undefined' ? window.location.origin : 'https://your-domain.com';
+		return `${origin}/forms/optin`;
+	}
+
+	function resetOptinForm() {
+		optinData = {
+			email: '',
+			firstName: '',
+			lastName: '',
+			phone: ''
+		};
+		optinSubmitted = false;
+		optinError = '';
+	}
 </script>
 
 <svelte:head>
@@ -290,26 +376,28 @@
 </svelte:head>
 
 <div class="min-h-screen bg-black p-6">
-	<div class="max-w-4xl mx-auto space-y-8">
+	<div class="max-w-7xl mx-auto space-y-8">
 	<!-- Page header -->
 	<div>
-		<h1 class="text-3xl font-bold text-white">MT5 Investor Credentials</h1>
+		<h1 class="text-3xl font-bold text-white">Forms</h1>
 		<p class="mt-2 text-gray-400">
-			Secure form to capture MT5 investor access for transparent conversion tracking
+			Embed forms on your landing pages to capture leads and credentials
 		</p>
 	</div>
 
-	<div class="flex justify-end">
-		<button
-			on:click={toggleEmbedCode}
-			class="inline-flex items-center px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
-		>
-			<Code class="w-4 h-4 mr-2" />
-			Get Embed Code
-		</button>
-	</div>
-
-	<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+	<div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+		<!-- MT5 Form Section -->
+		<div class="space-y-6">
+			<div class="flex items-center justify-between">
+				<h2 class="text-2xl font-bold text-white">MT5 Investor Form</h2>
+				<button
+					on:click={toggleEmbedCode}
+					class="inline-flex items-center px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors text-sm"
+				>
+					<Code class="w-4 h-4 mr-2" />
+					Embed Code
+				</button>
+			</div>
 		<!-- Form Section -->
 		<div class="glass-card-ios rounded-2xl p-8 shadow-2xl">
 			{#if !submitted}
@@ -481,10 +569,12 @@
 								</div>
 								<input
 									id="login"
+									name="mt5_account_number"
 									type="text"
 									bind:value={formData.login}
 									required
 									placeholder="Enter your MT5 account number"
+									autocomplete="off"
 									class="w-full pl-12 pr-12 py-4 bg-black border {validating ? 'border-yellow-500' : validationResult?.valid ? 'border-green-600' : validationError ? 'border-red-600' : 'border-slate-700'} rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 {themeClasses.focusRing} {themeClasses.focusBorder} transition-all duration-200 text-lg"
 								/>
 								<!-- Validation status icon -->
@@ -511,10 +601,12 @@
 								</div>
 								<input
 									id="password"
+									name="mt5_investor_password"
 									type={showPassword ? 'text' : 'password'}
 									bind:value={formData.password}
 									required
 									placeholder="Enter your investor password"
+									autocomplete="new-password"
 									class="w-full pl-12 pr-24 py-4 bg-black border {validating ? 'border-yellow-500' : validationResult?.valid ? 'border-green-600' : validationError ? 'border-red-600' : 'border-slate-700'} rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 {themeClasses.focusRing} {themeClasses.focusBorder} transition-all duration-200 text-lg"
 								/>
 								<!-- Password visibility toggle -->
@@ -544,6 +636,23 @@
 
 					</div>
 
+					<!-- Validate Button -->
+					<button
+						type="button"
+						on:click={manualValidate}
+						disabled={validating || !formData.login || !formData.password || !formData.server}
+						class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+					>
+						{#if validating}
+							<div class="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+							Validating MT5 Credentials...
+						{:else}
+							<Shield class="w-5 h-5" />
+							Validate MT5 Credentials
+						{/if}
+					</button>
+
+					<!-- Submit Button -->
 					<button
 						type="submit"
 						disabled={submitting || !isFormValid()}
@@ -604,7 +713,7 @@
 					</li>
 					<li class="flex items-center">
 						<CheckCircle class="w-4 h-4 mr-2 flex-shrink-0 {themeClasses.primary}" />
-						Automatically synced with Systeme.io workflows
+						Automatically synced with Workflow Backend
 					</li>
 				</ul>
 			</div>
@@ -631,7 +740,7 @@
 						<code>{getEmbedCode()}</code>
 					</pre>
 					<p class="text-sm text-gray-400 mt-3">
-						Use this code to embed the MT5 investor form in your Systeme.io pages or external websites.
+						Use this code to embed the MT5 investor form in your landing pages or external websites.
 					</p>
 				</div>
 			{/if}
@@ -641,7 +750,7 @@
 				<h3 class="text-lg font-semibold text-white mb-4">Integration Status</h3>
 				<div class="space-y-3">
 					<div class="flex items-center justify-between">
-						<span class="text-gray-300">Systeme.io Sync</span>
+						<span class="text-gray-300">Workflow Backend Sync</span>
 						<div class="flex items-center {themeClasses.primary}">
 							<CheckCircle class="w-4 h-4 mr-1" />
 							<span class="text-sm font-medium">Active</span>
@@ -664,6 +773,198 @@
 				</div>
 			</div>
 		</div>
+		</div>
+		<!-- End MT5 Form Section -->
+
+		<!-- Optin Form Section -->
+		<div class="space-y-6">
+			<div class="flex items-center justify-between">
+				<h2 class="text-2xl font-bold text-white">Lead Optin Form</h2>
+				<button
+					on:click={toggleOptinEmbedCode}
+					class="inline-flex items-center px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors text-sm"
+				>
+					<Code class="w-4 h-4 mr-2" />
+					Embed Code
+				</button>
+			</div>
+
+			<!-- Optin Form Card -->
+			<div class="glass-card-ios rounded-2xl p-8 shadow-2xl">
+				{#if !optinSubmitted}
+					<form on:submit|preventDefault={submitOptinForm} class="space-y-6">
+						{#if optinError}
+							<div class="bg-black border border-red-600 rounded-lg p-4">
+								<div class="flex items-center">
+									<AlertTriangle class="w-5 h-5 text-red-400 mr-3" />
+									<p class="text-red-300">{optinError}</p>
+								</div>
+							</div>
+						{/if}
+
+						<!-- Email -->
+						<div>
+							<label for="optin-email" class="block text-sm font-medium text-gray-300 mb-2">
+								<Mail class="w-4 h-4 inline mr-2" />
+								Email Address *
+							</label>
+							<input
+								type="email"
+								id="optin-email"
+								name="optin_email"
+								bind:value={optinData.email}
+								required
+								autocomplete="off"
+								class="w-full px-4 py-3 bg-black border border-orange-500/30 rounded-lg text-white focus:border-orange-500 focus:outline-none transition-colors"
+								placeholder="your@email.com"
+							/>
+						</div>
+
+						<!-- First Name -->
+						<div>
+							<label for="optin-firstName" class="block text-sm font-medium text-gray-300 mb-2">
+								<User class="w-4 h-4 inline mr-2" />
+								First Name *
+							</label>
+							<input
+								type="text"
+								id="optin-firstName"
+								name="optin_first_name"
+								bind:value={optinData.firstName}
+								required
+								autocomplete="off"
+								class="w-full px-4 py-3 bg-black border border-orange-500/30 rounded-lg text-white focus:border-orange-500 focus:outline-none transition-colors"
+								placeholder="John"
+							/>
+						</div>
+
+						<!-- Last Name -->
+						<div>
+							<label for="optin-lastName" class="block text-sm font-medium text-gray-300 mb-2">
+								<User class="w-4 h-4 inline mr-2" />
+								Last Name *
+							</label>
+							<input
+								type="text"
+								id="optin-lastName"
+								name="optin_last_name"
+								bind:value={optinData.lastName}
+								required
+								autocomplete="off"
+								class="w-full px-4 py-3 bg-black border border-orange-500/30 rounded-lg text-white focus:border-orange-500 focus:outline-none transition-colors"
+								placeholder="Doe"
+							/>
+						</div>
+
+						<!-- Phone -->
+						<div>
+							<label for="optin-phone" class="block text-sm font-medium text-gray-300 mb-2">
+								<Phone class="w-4 h-4 inline mr-2" />
+								Phone Number
+							</label>
+							<input
+								type="tel"
+								id="optin-phone"
+								name="optin_phone"
+								bind:value={optinData.phone}
+								autocomplete="off"
+								class="w-full px-4 py-3 bg-black border border-orange-500/30 rounded-lg text-white focus:border-orange-500 focus:outline-none transition-colors"
+								placeholder="+1 (555) 123-4567"
+							/>
+						</div>
+
+						<!-- Submit Button -->
+						<button
+							type="submit"
+							disabled={optinSubmitting}
+							class="w-full py-3 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 disabled:opacity-50 text-white font-medium rounded-lg transition-all shadow-lg shadow-orange-500/50"
+						>
+							{optinSubmitting ? 'Submitting...' : 'Submit'}
+						</button>
+					</form>
+				{:else}
+					<!-- Success Message -->
+					<div class="text-center py-12">
+						<CheckCircle class="w-16 h-16 text-green-400 mx-auto mb-4" />
+						<h3 class="text-xl font-semibold text-white mb-2">Thank You!</h3>
+						<p class="text-gray-400 mb-6">
+							Your information has been submitted successfully. We'll be in touch soon!
+						</p>
+						<button
+							on:click={resetOptinForm}
+							class="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+						>
+							Submit Another
+						</button>
+					</div>
+				{/if}
+			</div>
+
+			<!-- Optin Embed Code Section -->
+			{#if showOptinEmbedCode}
+				<div class="glass-card-ios rounded-2xl p-6 shadow-xl">
+					<div class="flex items-center justify-between mb-4">
+						<h3 class="text-lg font-semibold text-white">Embed Code</h3>
+						<button
+							on:click={copyOptinEmbedCode}
+							class="flex items-center px-3 py-2 text-sm bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+						>
+							{#if optinCopySuccess}
+								<CheckCircle class="w-4 h-4 mr-1" />
+								Copied!
+							{:else}
+								<Copy class="w-4 h-4 mr-1" />
+								Copy
+							{/if}
+						</button>
+					</div>
+					<pre class="bg-black text-gray-300 p-4 rounded-lg text-xs overflow-x-auto border border-orange-500/20">
+						<code>{getOptinEmbedCode()}</code>
+					</pre>
+					<div class="mt-4 p-4 bg-black border border-orange-500/20 rounded-lg">
+						<p class="text-sm font-medium text-gray-300 mb-2">Direct URL:</p>
+						<div class="flex items-center gap-2">
+							<input
+								type="text"
+								readonly
+								value={getOptinFormURL()}
+								class="flex-1 px-3 py-2 bg-black border border-orange-500/30 rounded text-sm text-gray-300"
+							/>
+							<button
+								on:click={() => {
+									navigator.clipboard.writeText(getOptinFormURL());
+									optinCopySuccess = true;
+									setTimeout(() => optinCopySuccess = false, 2000);
+								}}
+								class="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
+							>
+								<Copy class="w-4 h-4" />
+							</button>
+						</div>
+					</div>
+				</div>
+			{/if}
+
+			<!-- Optin Info -->
+			<div class="glass-card-ios rounded-2xl p-6 shadow-xl">
+				<h3 class="text-lg font-semibold text-white mb-4">About This Form</h3>
+				<ul class="space-y-3 text-sm text-gray-400">
+					<li class="flex items-center">
+						<CheckCircle class="w-4 h-4 mr-2 flex-shrink-0 {themeClasses.primary}" />
+						Captures basic lead information
+					</li>
+					<li class="flex items-center">
+						<CheckCircle class="w-4 h-4 mr-2 flex-shrink-0 {themeClasses.primary}" />
+						Syncs directly with Workflow Backend
+					</li>
+					<li class="flex items-center">
+						<CheckCircle class="w-4 h-4 mr-2 flex-shrink-0 {themeClasses.primary}" />
+						Perfect for landing pages and websites
+					</li>
+				</ul>
+			</div>
+		</div>
+		<!-- End Optin Form Section -->
 	</div>
 </div>
 </div>

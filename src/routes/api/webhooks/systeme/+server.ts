@@ -185,14 +185,24 @@ async function handleContactCreated(payload: any) {
 	// Support both lead and contact data structures
 	const contact = payload.lead || payload.contact || payload.data;
 
-	console.log(`👤 New lead/contact created in Systeme.io: ${contact.email || contact.Email}`);
+	// Extract email (handle both cases)
+	const email = contact.email || contact.Email;
+
+	// Validate email exists
+	if (!email) {
+		console.error('❌ Cannot create lead from Systeme.io: email is required');
+		return {
+			action: 'error',
+			details: 'Email is required for Systeme.io leads'
+		};
+	}
+
+	console.log(`👤 New lead/contact created in Systeme.io: ${email}`);
 
 	try {
 		// Generate tracking token
 		const trackingToken = crypto.randomBytes(32).toString('hex');
 
-		// Extract email (handle both cases)
-		const email = contact.email || contact.Email;
 		const firstName = contact.first_name || contact.firstName || contact.FirstName || '';
 		const lastName = contact.last_name || contact.lastName || contact.LastName || '';
 		const phone = contact.phone || contact.Phone || null;

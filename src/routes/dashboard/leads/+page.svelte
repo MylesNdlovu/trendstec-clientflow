@@ -296,7 +296,7 @@
 		{:else if leads.length === 0}
 			<div class="text-center py-12">
 				<Users class="w-12 h-12 {themeClasses.primary} mx-auto mb-4" />
-				<p class="text-gray-500 dark:text-gray-400">No leads found. When you receive leads from Systeme.io, they will appear here.</p>
+				<p class="text-gray-500 dark:text-gray-400">No leads found. When you receive leads from your Workflow Backend, they will appear here.</p>
 			</div>
 		{:else}
 			<div class="space-y-3">
