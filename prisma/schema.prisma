@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DB_URL")
+  url      = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
@@ -30,7 +30,12 @@ model User {
   emailVerified      Boolean   @default(false)
 
   // Relations
-  leads              Lead[]    // Trader leads owned by this IB
+  leads              Lead[]              // Trader leads owned by this IB
+  facebookAdAccounts FacebookAdAccount[] // Facebook ad accounts
+  adCampaigns        AdCampaign[]       // Ad campaigns
+  adSpendHistory     AdSpendHistory[]   // Spend history
+  ibCommissions      IbCommission[]     // Commission earnings
+  adSpendAlerts      AdSpendAlert[]     // Alert configurations
 
   @@map("users")
 }
@@ -131,6 +136,23 @@ model Integration {
   updatedAt  DateTime  @updatedAt
 
   @@map("integrations")
+}
+
+// Admin-only Systeme.io configuration (single shared account for all IBs)
+model SystemeConfig {
+  id              String    @id @default(cuid())
+  apiKey          String?   // Encrypted API key (admin-only access)
+  email           String?   // Systeme.io login email (for Playwright automation)
+  password        String?   // Encrypted password (for Playwright automation)
+  isActive        Boolean   @default(true)
+  lastSyncAt      DateTime?
+  syncCount       Int       @default(0)
+  errorCount      Int       @default(0)
+  lastError       String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("systeme_config")
 }
 
 model ScrapingJob {
@@ -324,4 +346,299 @@ model LeadActivity {
   lead          Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
   @@map("lead_activities")
+}
+
+// ============================================
+// FACEBOOK ADS MODULE
+// ============================================
+
+// Facebook Ad Account Management (Per-IB)
+model FacebookAdAccount {
+  id                String    @id @default(cuid())
+  userId            String    // IB owner
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Setup Detection
+  setupTier         Int       @default(0) // 0=none, 1=page only, 2=business, 3=full
+
+  // Facebook Assets
+  pageId            String?
+  pageName          String?
+  pageAccessToken   String?   // Encrypted
+
+  businessId        String?
+  businessName      String?
+
+  adAccountId       String?   @unique
+  adAccountName     String?
+  accessToken       String?   // Encrypted - full access token
+  tokenExpiresAt    DateTime?
+
+  // Capabilities
+  canBoostPosts     Boolean   @default(false)
+  canCreateCampaigns Boolean  @default(false)
+
+  // Status
+  isActive          Boolean   @default(true)
+  isConnected       Boolean   @default(false)
+  lastSyncAt        DateTime?
+  connectionError   String?
+
+  // Metadata
+  currency          String    @default("USD")
+  timezone          String    @default("UTC")
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relations
+  campaigns         AdCampaign[]
+  spendHistory      AdSpendHistory[]
+
+  @@index([userId])
+  @@map("facebook_ad_accounts")
+}
+
+// Ad Templates (Pre-built by Admin)
+model AdTemplate {
+  id                String    @id @default(cuid())
+  name              String
+  description       String?
+  category          String    // "lead_generation", "conversion", "awareness"
+
+  // Template Configuration (JSON)
+  // {
+  //   "targeting": {"age_min": 25, "age_max": 55, "interests": [...], "locations": [...]},
+  //   "adCopy": "...",
+  //   "callToAction": "LEARN_MORE",
+  //   "objective": "LEAD_GENERATION"
+  // }
+  templateData      Json
+
+  // Template Preview
+  thumbnailUrl      String?
+
+  // Status
+  isActive          Boolean   @default(true)
+  isPublic          Boolean   @default(true) // Visible to all IBs
+
+  // Admin settings
+  createdBy         String?   // Admin user ID
+  usageCount        Int       @default(0)
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relations
+  campaigns         AdCampaign[]
+
+  @@map("ad_templates")
+}
+
+// IB's Created Campaigns/Boosted Posts
+model AdCampaign {
+  id                String    @id @default(cuid())
+  userId            String    // IB owner
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  adAccountId       String
+  adAccount         FacebookAdAccount @relation(fields: [adAccountId], references: [id], onDelete: Cascade)
+  templateId        String?
+  template          AdTemplate? @relation(fields: [templateId], references: [id])
+
+  // Facebook IDs
+  fbCampaignId      String?   @unique // For full campaigns (Tier 3)
+  fbAdSetId         String?
+  fbAdId            String?
+  fbPostId          String?   // For boosted posts (Tier 1)
+  fbPromotionId     String?   // Promotion ID for boosted posts
+
+  // Campaign Details
+  name              String
+  objective         String    @default("LEAD_GENERATION") // "LEAD_GENERATION", "CONVERSIONS", "ENGAGEMENT"
+  status            String    @default("DRAFT") // DRAFT, ACTIVE, PAUSED, COMPLETED, ERROR
+  campaignType      String    @default("BOOST") // BOOST (Tier 1) or CAMPAIGN (Tier 3)
+
+  // Budget
+  dailyBudget       Float?
+  lifetimeBudget    Float?
+  totalSpent        Float     @default(0)
+  remainingBudget   Float?
+
+  // Targeting (JSON)
+  // {
+  //   "age_min": 25,
+  //   "age_max": 55,
+  //   "genders": [1, 2],
+  //   "geo_locations": {...},
+  //   "interests": [...]
+  // }
+  targetingData     Json
+
+  // Ad Creative
+  adCopy            String?
+  imageUrl          String?
+  videoUrl          String?
+  callToAction      String?   // "LEARN_MORE", "SIGN_UP", "CONTACT_US"
+
+  // Performance Metrics
+  impressions       Int       @default(0)
+  clicks            Int       @default(0)
+  leads             Int       @default(0)
+  conversions       Int       @default(0)
+  ctr               Float     @default(0) // Click-through rate
+  cpc               Float     @default(0) // Cost per click
+  cpl               Float     @default(0) // Cost per lead
+  roas              Float     @default(0) // Return on ad spend
+
+  // Dates
+  startDate         DateTime?
+  endDate           DateTime?
+  lastSyncAt        DateTime?
+
+  // Error tracking
+  errorMessage      String?
+  errorCount        Int       @default(0)
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([adAccountId])
+  @@index([status])
+  @@index([campaignType])
+  @@map("ad_campaigns")
+}
+
+// Daily Ad Spend Tracking
+model AdSpendHistory {
+  id                String    @id @default(cuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  adAccountId       String
+  adAccount         FacebookAdAccount @relation(fields: [adAccountId], references: [id], onDelete: Cascade)
+
+  // Spend Data
+  date              DateTime  @db.Date
+  dailySpend        Float     @default(0)
+  impressions       Int       @default(0)
+  clicks            Int       @default(0)
+  leads             Int       @default(0)
+  conversions       Int       @default(0)
+
+  // Calculated Metrics
+  ctr               Float     @default(0)
+  cpc               Float     @default(0)
+  cpl               Float     @default(0)
+
+  // Running totals
+  cumulativeSpend   Float     @default(0)
+  cumulativeLeads   Int       @default(0)
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@unique([adAccountId, date])
+  @@index([userId, date])
+  @@map("ad_spend_history")
+}
+
+// Commission Configuration (Admin Settings)
+model CommissionConfig {
+  id                String    @id @default(cuid())
+
+  // Commission Tiers
+  name              String    @unique
+  description       String?
+
+  // CPA Commission Rules
+  cpaEarnedMin      Float     // Min CPA earned to qualify (e.g., $100)
+  cpaEarnedMax      Float?    // Max CPA earned (null = unlimited)
+  commissionRate    Float     // % of CPA to pay IB (e.g., 0.30 = 30%)
+
+  // Ad Spend Incentives
+  minMonthlySpend   Float?    // Min monthly ad spend required (e.g., $500)
+  spendBonus        Float?    // Bonus % if threshold met (e.g., 0.05 = 5% extra)
+
+  // Tier Settings
+  tierLevel         Int       @default(1) // 1=Bronze, 2=Silver, 3=Gold
+
+  isActive          Boolean   @default(true)
+  isDefault         Boolean   @default(false)
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@map("commission_configs")
+}
+
+// IB Commission Earnings (Monthly)
+model IbCommission {
+  id                String    @id @default(cuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Period
+  month             Int       // 1-12
+  year              Int
+
+  // Earnings Data
+  totalAdSpend      Float     @default(0) // IB's total ad spend this month
+  totalLeads        Int       @default(0) // Total leads generated
+  qualifiedLeads    Int       @default(0) // Leads that converted/qualified
+  totalCpaEarned    Float     @default(0) // Platform's CPA earnings from IB's leads
+
+  // Commission Calculation
+  commissionRate    Float     // Rate applied (e.g., 0.30)
+  commissionAmount  Float     @default(0) // Amount owed to IB
+  bonusAmount       Float     @default(0) // Spend bonus
+  totalPayout       Float     @default(0) // Total to pay IB
+
+  // Payment
+  paymentStatus     String    @default("PENDING") // PENDING, PROCESSING, PAID, HELD
+  paidAt            DateTime?
+  paymentMethod     String?   // "bank_transfer", "paypal", etc.
+  paymentReference  String?
+
+  // Notes
+  notes             String?
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@unique([userId, month, year])
+  @@index([userId])
+  @@index([paymentStatus])
+  @@map("ib_commissions")
+}
+
+// Systeme.io Alert Triggers (Low Spend Alerts)
+model AdSpendAlert {
+  id                String    @id @default(cuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Alert Type
+  alertType         String    // "LOW_SPEND", "NO_SPEND", "HIGH_PERFORMANCE", "LOW_PERFORMANCE"
+
+  // Thresholds
+  minDailySpend     Float?    // Alert if daily spend < this (e.g., $10)
+  daysInactive      Int?      // Alert if no spend for X days (e.g., 3)
+  minLeadsPerDay    Int?      // Alert if leads/day < this
+
+  // Systeme.io Integration
+  systemeWorkflowId String?   // Workflow to trigger in Systeme.io
+  systemeTagToAdd   String?   // Tag to add to IB contact (e.g., "Low_Ad_Spend")
+  emailTemplate     String?   // Email template to send
+
+  // Status
+  isActive          Boolean   @default(true)
+  lastTriggeredAt   DateTime?
+  triggerCount      Int       @default(0)
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([alertType])
+  @@map("ad_spend_alerts")
 }
