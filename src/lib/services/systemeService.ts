@@ -323,8 +323,13 @@ class SystemeService {
 
 	/**
 	 * Complete MT5 credentials sync process
+	 * @param credentials - MT5 credentials to sync
+	 * @param ibIdentifier - Optional IB identifier (user ID, name, or email) for multi-tenant segregation
 	 */
-	async syncMT5Credentials(credentials: MT5Credentials): Promise<SystemeApiResponse<{
+	async syncMT5Credentials(
+		credentials: MT5Credentials,
+		ibIdentifier?: string
+	): Promise<SystemeApiResponse<{
 		contact: SystemeContact;
 		tagsAdded: boolean;
 		workflowTriggered: boolean;
@@ -365,12 +370,18 @@ class SystemeService {
 				};
 			}
 
-			// Step 3: Add MT5 credential tags
+			// Step 3: Add MT5 credential tags (including IB-specific tag for multi-tenant segregation)
 			const tagsToAdd = [
 				'MT5_Credentials_Submitted',
 				`MT5_Server_${credentials.mt5Server.replace(/[^a-zA-Z0-9]/g, '_')}`,
 				'Ready_For_Verification'
 			];
+
+			// Add IB-specific tag for lead segregation in shared Systeme.io account
+			if (ibIdentifier) {
+				const ibTag = `IB_${ibIdentifier.replace(/[^a-zA-Z0-9]/g, '_')}`;
+				tagsToAdd.push(ibTag);
+			}
 
 			const tagResult = await this.addTagsToContact(contact.id, tagsToAdd);
 

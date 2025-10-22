@@ -3,11 +3,15 @@ import type { RequestHandler } from './$types';
 import { systemeService } from '$lib/services/systemeService';
 import { validateAndSanitize, ValidationError } from '$lib/utils/validation';
 import { webhookQueue } from '$lib/utils/webhook-queue';
+import { requireAuth } from '$lib/server/auth/middleware';
+import prisma from '$lib/config/database';
 
 // POST: Submit MT5 credentials and sync to Systeme.io
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async (event) => {
 	try {
-		const rawData = await request.json();
+		// Require authentication to identify which IB this lead belongs to
+		const user = await requireAuth(event);
+		const rawData = await event.request.json();
 
 		// Validate and sanitize the input data
 		let credentials;
@@ -28,16 +32,21 @@ export const POST: RequestHandler = async ({ request }) => {
 			email: credentials.email,
 			mt5Login: credentials.mt5Login,
 			mt5Server: credentials.mt5Server,
+			ibUser: user.email,
+			ibUserId: user.id,
 			timestamp: new Date().toISOString()
 		});
 
-		// Perform the sync with Systeme.io
-		const syncResult = await systemeService.syncMT5Credentials({
-			email: credentials.email,
-			mt5Login: credentials.mt5Login,
-			mt5Server: credentials.mt5Server,
-			investorPassword: rawData.investorPassword
-		});
+		// Perform the sync with Systeme.io (with IB identifier for lead segregation)
+		const syncResult = await systemeService.syncMT5Credentials(
+			{
+				email: credentials.email,
+				mt5Login: credentials.mt5Login,
+				mt5Server: credentials.mt5Server,
+				investorPassword: rawData.investorPassword
+			},
+			user.id // Pass IB user ID for multi-tenant segregation via tags
+		);
 
 		if (!syncResult.success) {
 			// Add failed sync to webhook queue for retry

@@ -384,7 +384,6 @@
 			</div>
 		</div>
 
-
 		<!-- Debug Info -->
 		<div class="glass-card-ios rounded-2xl p-4 shadow-xl text-sm">
 			<p class="text-white">Current theme: <span class="text-orange-400">{$theme.name}</span> ({$theme.accentColor})</p>
