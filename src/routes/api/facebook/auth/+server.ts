@@ -9,7 +9,16 @@ const REDIRECT_URI = process.env.PUBLIC_BASE_URL + '/api/facebook/callback';
 // GET: Initiate Facebook OAuth flow
 export const GET: RequestHandler = async (event) => {
 	try {
-		await requireAuth(event);
+		const user = await requireAuth(event);
+
+		console.log('🔵 Initiating Facebook OAuth for user:', user.id);
+		console.log('  App ID:', FACEBOOK_APP_ID ? 'Set' : 'MISSING');
+		console.log('  Redirect URI:', REDIRECT_URI);
+
+		if (!FACEBOOK_APP_ID) {
+			console.error('❌ FACEBOOK_APP_ID not set');
+			throw redirect(302, '/dashboard/ads?error=oauth_failed&details=missing_app_id');
+		}
 
 		// Facebook OAuth URL with required permissions
 		const permissions = [
@@ -26,13 +35,15 @@ export const GET: RequestHandler = async (event) => {
 			`&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
 			`&scope=${permissions}` +
 			`&response_type=code` +
-			`&state=${event.locals.user?.id || ''}`;
+			`&state=${user.id}`;
 
+		console.log('✅ Redirecting to Facebook OAuth');
 		throw redirect(302, authUrl);
 	} catch (error) {
 		if (error instanceof Response) throw error;
 
-		console.error('Error initiating Facebook OAuth:', error);
-		throw redirect(302, '/dashboard/ads?error=oauth_failed');
+		const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+		console.error('❌ Error initiating Facebook OAuth:', errorMessage);
+		throw redirect(302, `/dashboard/ads?error=oauth_failed&details=${encodeURIComponent(errorMessage)}`);
 	}
 };
