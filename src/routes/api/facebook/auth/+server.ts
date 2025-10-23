@@ -20,6 +20,10 @@ export const GET: RequestHandler = async (event) => {
 			throw redirect(302, '/dashboard/ads?error=oauth_failed&details=missing_app_id');
 		}
 
+		// Trim the BASE_URL to remove any newlines
+		const cleanRedirectUri = REDIRECT_URI.trim();
+		console.log('  Clean Redirect URI:', cleanRedirectUri);
+
 		// Facebook OAuth URL with required permissions
 		const permissions = [
 			'pages_show_list',
@@ -32,18 +36,18 @@ export const GET: RequestHandler = async (event) => {
 
 		const authUrl = `https://www.facebook.com/v19.0/dialog/oauth?` +
 			`client_id=${FACEBOOK_APP_ID}` +
-			`&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
+			`&redirect_uri=${encodeURIComponent(cleanRedirectUri)}` +
 			`&scope=${permissions}` +
 			`&response_type=code` +
 			`&state=${user.id}`;
 
-		console.log('✅ Redirecting to Facebook OAuth');
+		console.log('✅ Redirecting to Facebook OAuth URL:', authUrl.substring(0, 100) + '...');
 		throw redirect(302, authUrl);
 	} catch (error) {
 		if (error instanceof Response) throw error;
 
-		const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-		console.error('❌ Error initiating Facebook OAuth:', errorMessage);
+		const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
+		console.error('❌ Error initiating Facebook OAuth:', errorMessage, error);
 		throw redirect(302, `/dashboard/ads?error=oauth_failed&details=${encodeURIComponent(errorMessage)}`);
 	}
 };
