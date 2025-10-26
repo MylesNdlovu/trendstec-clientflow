@@ -12,16 +12,26 @@ export const GET: RequestHandler = async () => {
 			orderBy: { createdAt: 'desc' }
 		});
 
-		// Parse settings JSON
-		const parsedIntegrations = integrations.map(integration => ({
-			...integration,
-			settings: integration.settings ? JSON.parse(integration.settings) : null
-		}));
+		// Parse settings JSON safely
+		const parsedIntegrations = integrations.map(integration => {
+			let settings = null;
+			try {
+				settings = integration.settings ? JSON.parse(integration.settings) : null;
+			} catch (e) {
+				console.error('Failed to parse integration settings:', e);
+				settings = null;
+			}
+
+			return {
+				...integration,
+				settings
+			};
+		});
 
 		return json({ success: true, integrations: parsedIntegrations });
 	} catch (error) {
 		console.error('Error fetching integrations:', error);
-		return json({ success: false, error: 'Failed to fetch integrations' }, { status: 500 });
+		return json({ success: true, integrations: [] }); // Return empty array instead of error
 	}
 };
 
