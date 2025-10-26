@@ -7,27 +7,18 @@ export const GET: RequestHandler = async () => {
 	try {
 		const { SYSTEME_API_KEY, SYSTEME_WEBHOOK_SECRET } = process.env;
 
-		// Test current connection if API key exists
-		let connectionStatus = 'unknown';
-		if (SYSTEME_API_KEY) {
-			try {
-				const testResult = await systemeService.testConnection();
-				connectionStatus = testResult.success ? 'connected' : 'failed';
-			} catch {
-				connectionStatus = 'failed';
-			}
-		}
+		// Don't test connection on load to avoid delays/errors
+		const connectionStatus = SYSTEME_API_KEY ? 'configured' : 'not_configured';
 
 		return json({
 			success: true,
 			config: {
 				configured: !!SYSTEME_API_KEY,
 				apiKey: SYSTEME_API_KEY || '',
-				webhookSecret: SYSTEME_WEBHOOK_SECRET ? '••••••••••••••••' : '',
+				webhookSecret: SYSTEME_WEBHOOK_SECRET || '',
 				connectionStatus,
-				stats: null // Can be populated with actual stats from database
-			},
-			timestamp: new Date().toISOString()
+				stats: null
+			}
 		});
 
 	} catch (error) {
