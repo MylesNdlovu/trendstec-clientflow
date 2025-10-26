@@ -1,5 +1,16 @@
 {
   "buildCommand": "npx prisma generate && npm run build",
   "framework": "sveltekit",
-  "installCommand": "npm install --ignore-scripts"
+  "installCommand": "npm install --ignore-scripts",
+  "headers": [
+    {
+      "source": "/_app/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    }
+  ]
 }
