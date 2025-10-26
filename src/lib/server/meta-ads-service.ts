@@ -5,9 +5,16 @@
  * for affiliates and introducing brokers (IBs).
  */
 
-import { FacebookAdsApi, AdAccount, Campaign, AdSet, Ad, AdsInsights } from 'facebook-nodejs-business-sdk';
 import prisma from '$lib/config/database';
 import { decrypt } from './security/encryption';
+
+// Lazy import to prevent client-side bundling errors
+let FacebookAdsApi: any;
+let AdAccount: any;
+let Campaign: any;
+let AdSet: any;
+let Ad: any;
+let AdsInsights: any;
 
 // Initialize Facebook Ads API
 const FB_APP_ID = process.env.FACEBOOK_APP_ID || '';
@@ -15,8 +22,28 @@ const FB_APP_SECRET = process.env.FACEBOOK_APP_SECRET || '';
 
 // Don't initialize at module load - initialize when needed to avoid client-side errors
 let apiInitialized = false;
-function ensureApiInitialized() {
-	if (!apiInitialized && typeof FacebookAdsApi !== 'undefined' && FacebookAdsApi.init) {
+let sdkLoaded = false;
+
+async function loadFacebookSDK() {
+	if (sdkLoaded || typeof window !== 'undefined') return;
+
+	try {
+		const sdk = await import('facebook-nodejs-business-sdk');
+		FacebookAdsApi = sdk.FacebookAdsApi;
+		AdAccount = sdk.AdAccount;
+		Campaign = sdk.Campaign;
+		AdSet = sdk.AdSet;
+		Ad = sdk.Ad;
+		AdsInsights = sdk.AdsInsights;
+		sdkLoaded = true;
+	} catch (error) {
+		console.error('Failed to load Facebook SDK:', error);
+	}
+}
+
+async function ensureApiInitialized() {
+	await loadFacebookSDK();
+	if (!apiInitialized && FacebookAdsApi && FacebookAdsApi.init) {
 		FacebookAdsApi.init(FB_APP_ID, FB_APP_SECRET);
 		apiInitialized = true;
 	}
