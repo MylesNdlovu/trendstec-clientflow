@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { requireAuth } from '$lib/server/auth/middleware';
-import { MetaAdsService } from '$lib/server/meta-ads-service';
+import { MetaAdsService } from '$lib/server/meta-ads-service.server';
 
 // GET: Get user's ad spend statistics from Meta Ads API
 export const GET: RequestHandler = async (event) => {
