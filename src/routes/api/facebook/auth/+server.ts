@@ -8,10 +8,13 @@ const REDIRECT_URI = process.env.PUBLIC_BASE_URL + '/api/facebook/callback';
 
 // GET: Initiate Facebook OAuth flow
 export const GET: RequestHandler = async (event) => {
+	console.log('🔵 Facebook OAuth endpoint called');
+	console.log('  Cookies:', event.cookies.getAll());
+
 	try {
 		const user = await requireAuth(event);
 
-		console.log('🔵 Initiating Facebook OAuth for user:', user.id);
+		console.log('✅ User authenticated:', user.id, user.email);
 		console.log('  App ID:', FACEBOOK_APP_ID ? 'Set' : 'MISSING');
 		console.log('  Redirect URI:', REDIRECT_URI);
 
