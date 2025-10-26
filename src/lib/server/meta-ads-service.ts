@@ -13,13 +13,22 @@ import { decrypt } from './security/encryption';
 const FB_APP_ID = process.env.FACEBOOK_APP_ID || '';
 const FB_APP_SECRET = process.env.FACEBOOK_APP_SECRET || '';
 
-FacebookAdsApi.init(FB_APP_ID, FB_APP_SECRET);
+// Don't initialize at module load - initialize when needed to avoid client-side errors
+let apiInitialized = false;
+function ensureApiInitialized() {
+	if (!apiInitialized && typeof FacebookAdsApi !== 'undefined' && FacebookAdsApi.init) {
+		FacebookAdsApi.init(FB_APP_ID, FB_APP_SECRET);
+		apiInitialized = true;
+	}
+}
 
 export class MetaAdsService {
 	/**
 	 * Get ad account with user's access token
 	 */
 	private static async getAdAccount(userId: string) {
+		ensureApiInitialized();
+
 		const fbAccount = await prisma.facebookAdAccount.findFirst({
 			where: { userId, isConnected: true }
 		});
