@@ -101,9 +101,17 @@
 
 	// Simple OAuth connection (one-click for beginners)
 	function connectWithFacebook() {
+		console.log('🔵 Connect with Facebook clicked');
 		connecting = true;
-		// Redirect to Facebook OAuth
-		window.location.href = '/api/facebook/auth';
+
+		try {
+			console.log('🔵 Redirecting to /api/facebook/auth');
+			window.location.href = '/api/facebook/auth';
+		} catch (error) {
+			console.error('❌ Redirect error:', error);
+			connecting = false;
+			setupError = 'Failed to redirect. Please try again.';
+		}
 	}
 
 	// Advanced manual token connection
