@@ -11,7 +11,8 @@
 		Globe,
 		Webhook,
 		Zap,
-		Copy
+		Copy,
+		Mail
 	} from 'lucide-svelte';
 	import { theme, getThemeClasses } from '$lib/stores/theme';
 
