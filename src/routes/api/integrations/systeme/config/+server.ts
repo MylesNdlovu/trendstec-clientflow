@@ -20,9 +20,13 @@ export const GET: RequestHandler = async () => {
 
 		return json({
 			success: true,
-			has_api_key: !!SYSTEME_API_KEY,
-			webhook_secret: SYSTEME_WEBHOOK_SECRET ? '••••••••••••••••' : '',
-			connection_status: connectionStatus,
+			config: {
+				configured: !!SYSTEME_API_KEY,
+				apiKey: SYSTEME_API_KEY || '',
+				webhookSecret: SYSTEME_WEBHOOK_SECRET ? '••••••••••••••••' : '',
+				connectionStatus,
+				stats: null // Can be populated with actual stats from database
+			},
 			timestamp: new Date().toISOString()
 		});
 

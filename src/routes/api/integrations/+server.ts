@@ -1,8 +1,6 @@
 import { json } from '@sveltejs/kit';
-import { PrismaClient } from '@prisma/client';
 import type { RequestHandler } from './$types';
-
-const prisma = new PrismaClient();
+import prisma from '$lib/config/database';
 
 /**
  * GET /api/integrations
