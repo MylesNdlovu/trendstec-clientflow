@@ -1,6 +1,7 @@
 import type { Handle } from '@sveltejs/kit';
 import { scrapingScheduler } from '$lib/services/scrapingScheduler';
-import { MetaAdsSyncScheduler } from '$lib/services/metaAdsSyncScheduler';
+// Temporarily disabled to fix client bundling issue
+// import { MetaAdsSyncScheduler } from '$lib/services/metaAdsSyncScheduler';
 import { authenticate } from '$lib/server/auth/middleware';
 
 // Ensure DATABASE_URL is available for Prisma (fallback to POSTGRES_URL)
@@ -58,18 +59,18 @@ validateEnvironmentVariables();
 
 // Start schedulers when the server starts
 scrapingScheduler.start();
-MetaAdsSyncScheduler.start();
+// MetaAdsSyncScheduler.start(); // Temporarily disabled
 
 // Cleanup on server shutdown
 if (typeof process !== 'undefined') {
 	process.on('SIGTERM', () => {
 		scrapingScheduler.stop();
-		MetaAdsSyncScheduler.stop();
+		// MetaAdsSyncScheduler.stop();
 	});
 
 	process.on('SIGINT', () => {
 		scrapingScheduler.stop();
-		MetaAdsSyncScheduler.stop();
+		// MetaAdsSyncScheduler.stop();
 		process.exit(0);
 	});
 }
