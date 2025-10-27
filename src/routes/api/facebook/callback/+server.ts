@@ -10,7 +10,15 @@ const REDIRECT_URI = ((process.env.PUBLIC_BASE_URL || '').trim() + '/api/faceboo
 // GET: Handle Facebook OAuth callback
 export const GET: RequestHandler = async ({ url, cookies }) => {
 	try {
-		console.log('OAuth callback started');
+		console.log('=== OAuth callback started ===');
+		console.log('Environment check:', {
+			hasAppId: !!FACEBOOK_APP_ID,
+			hasAppSecret: !!FACEBOOK_APP_SECRET,
+			hasRedirectUri: !!REDIRECT_URI,
+			appIdLength: FACEBOOK_APP_ID.length,
+			redirectUri: REDIRECT_URI
+		});
+
 		const code = url.searchParams.get('code');
 		const state = url.searchParams.get('state'); // userId
 		const error = url.searchParams.get('error');
@@ -58,8 +66,14 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 		if (error instanceof Response) throw error;
 
 		console.error('OAuth callback error:', error);
+		console.error('Error type:', typeof error);
 		console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-		throw redirect(302, '/dashboard/ads?error=callback_failed&message=' + encodeURIComponent(error instanceof Error ? error.message : String(error)));
+		console.error('Error name:', error instanceof Error ? error.name : 'Unknown');
+
+		const errorMsg = error instanceof Error ? error.message : String(error);
+		const errorName = error instanceof Error ? error.name : 'UnknownError';
+
+		throw redirect(302, '/dashboard/ads?error=callback_failed&name=' + encodeURIComponent(errorName) + '&message=' + encodeURIComponent(errorMsg));
 	}
 };
 
