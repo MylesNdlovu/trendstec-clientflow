@@ -1,7 +1,9 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { requireAuth } from '$lib/server/auth/middleware';
-import { MetaAdsService } from '$lib/server/meta-ads-service.server';
+import { FacebookAPI } from '$lib/server/facebook-api';
+import prisma from '$lib/config/database';
+import { decrypt } from '$lib/server/security/encryption';
 
 // GET: Get user's ad campaigns with live Meta Ads data
 export const GET: RequestHandler = async (event) => {
@@ -9,7 +11,17 @@ export const GET: RequestHandler = async (event) => {
 		const user = await requireAuth(event);
 
 		// Fetch live campaigns from Meta Ads API
-		const campaigns = await MetaAdsService.getCampaigns(user.id);
+		const fbAccount = await prisma.facebookAdAccount.findFirst({
+			where: { userId: user.id, isConnected: true }
+		});
+
+		if (!fbAccount || !fbAccount.accessToken) {
+			return json({ success: false, error: 'No connected Facebook account' }, { status: 404 });
+		}
+
+		const accessToken = decrypt(fbAccount.accessToken);
+		const campaignsData = await FacebookAPI.getCampaigns(fbAccount.adAccountId!, accessToken);
+		const campaigns = campaignsData.data || [];
 
 		return json({
 			success: true,
