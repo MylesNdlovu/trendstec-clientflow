@@ -206,6 +206,8 @@
 				Facebook Ads Manager
 			</h1>
 			<p class="text-gray-400 mt-1">Launch campaigns in minutes - no experience needed</p>
+			<!-- DEBUG: Show active tab -->
+			<p class="text-xs text-yellow-400 mt-1 font-mono">DEBUG: activeTab = "{activeTab}" | loading = {loading} | adAccount = {adAccount ? 'exists' : 'null'}</p>
 		</div>
 		{#if adAccount?.isConnected && adAccount?.setupTier === 3}
 			<button
