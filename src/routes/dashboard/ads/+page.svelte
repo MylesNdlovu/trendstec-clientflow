@@ -26,6 +26,10 @@
 	let setupSuccess = false;
 
 	onMount(async () => {
+		console.log('🟢 Ads page mounted');
+		console.log('🟢 Initial activeTab:', activeTab);
+		console.log('🟢 Initial loading:', loading);
+
 		// Temporarily skip loading stats/campaigns due to SDK bundling issue
 		// await loadData();
 		loading = false;
@@ -43,6 +47,10 @@
 			setupError = getErrorMessage(errorParam);
 			activeTab = 'setup';
 		}
+
+		console.log('🟢 Page initialization complete');
+		console.log('🟢 Final activeTab:', activeTab);
+		console.log('🟢 adAccount:', adAccount);
 	});
 
 	function getErrorMessage(error: string): string {
@@ -268,7 +276,11 @@
 								Never run Facebook ads before? No problem! We'll guide you through everything step-by-step.
 							</p>
 							<button
-								on:click={() => activeTab = 'setup'}
+								on:click={() => {
+									console.log('🟢 Get Started clicked - switching to setup tab');
+									activeTab = 'setup';
+									console.log('🟢 Active tab is now:', activeTab);
+								}}
 								class="inline-flex items-center px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-lg font-semibold rounded-xl transition-all shadow-lg hover:shadow-xl"
 							>
 								Get Started
