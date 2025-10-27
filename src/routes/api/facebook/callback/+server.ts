@@ -49,38 +49,11 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 		}
 
 		const accessToken = tokenData.access_token;
+		console.log('Got access token successfully');
 
-		// Get long-lived token
-		console.log('Getting long-lived token...');
-		const longLivedResponse = await fetch(
-			`https://graph.facebook.com/v19.0/oauth/access_token?` +
-			`grant_type=fb_exchange_token` +
-			`&client_id=${FACEBOOK_APP_ID}` +
-			`&client_secret=${FACEBOOK_APP_SECRET}` +
-			`&fb_exchange_token=${accessToken}`
-		);
-
-		const longLivedData = await longLivedResponse.json();
-		console.log('Long-lived token response:', {
-			hasAccessToken: !!longLivedData.access_token,
-			expiresIn: longLivedData.expires_in,
-			error: longLivedData.error
-		});
-		const longLivedToken = longLivedData.access_token || accessToken;
-
-		// Detect user's Facebook setup
-		console.log('Detecting Facebook setup...');
-		const setupStatus = await detectFacebookSetup(longLivedToken);
-		console.log('Setup status:', setupStatus);
-
-		// TEMPORARILY SKIP DATABASE SAVE FOR TESTING
-		console.log('TEMPORARILY SKIPPING DATABASE SAVE - OAuth flow test');
-		console.log('Would save for userId:', state);
-		console.log('Token length:', longLivedToken.length);
-
-		// Just redirect to success for now to test OAuth flow
-		console.log('OAuth flow successful! Redirecting to dashboard...');
-		throw redirect(302, '/dashboard/ads?success=oauth_test&tier=' + setupStatus.tier);
+		// MINIMAL TEST - Just redirect immediately
+		console.log('OAuth flow successful! Token received. Redirecting...');
+		throw redirect(302, '/dashboard/ads?success=oauth_test&token_length=' + accessToken.length);
 	} catch (error) {
 		if (error instanceof Response) throw error;
 
