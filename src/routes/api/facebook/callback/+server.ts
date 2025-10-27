@@ -63,7 +63,12 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 		console.log('OAuth flow successful! Token received. Redirecting...');
 		throw redirect(302, '/dashboard/ads?success=oauth_test&token_length=' + accessToken.length);
 	} catch (error) {
-		if (error instanceof Response) throw error;
+		// Check if this is a redirect (SvelteKit redirect objects have status and location)
+		if (error instanceof Response ||
+		    (typeof error === 'object' && error !== null && 'status' in error && 'location' in error)) {
+			console.log('Re-throwing redirect:', error);
+			throw error;
+		}
 
 		console.error('OAuth callback error:', error);
 		console.error('Error type:', typeof error);
