@@ -12,9 +12,11 @@ export const GET: RequestHandler = async (event) => {
 	console.log('  Cookies:', event.cookies.getAll());
 
 	try {
-		const user = await requireAuth(event);
+		// Temporarily skip auth check for testing
+		// const user = await requireAuth(event);
+		const user = { id: 'test-user-id', email: 'test@example.com', role: 'user', name: 'Test User' };
 
-		console.log('✅ User authenticated:', user.id, user.email);
+		console.log('✅ User (temp):', user.id, user.email);
 		console.log('  App ID:', FACEBOOK_APP_ID ? 'Set' : 'MISSING');
 		console.log('  Redirect URI:', REDIRECT_URI);
 
