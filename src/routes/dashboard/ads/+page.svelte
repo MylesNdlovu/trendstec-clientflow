@@ -102,17 +102,24 @@
 	}
 
 	// Simple OAuth connection (one-click for beginners)
-	function connectWithFacebook() {
+	async function connectWithFacebook() {
 		console.log('🔵 Connect with Facebook clicked');
+		setupError = '';
 		connecting = true;
 
 		try {
+			console.log('🔵 Testing API endpoint...');
+			// First, test if the endpoint is reachable
+			const testResponse = await fetch('/api/facebook/auth', { method: 'HEAD' }).catch(() => null);
+			console.log('🔵 Endpoint test:', testResponse?.status || 'failed');
+
 			console.log('🔵 Redirecting to /api/facebook/auth');
-			window.location.href = '/api/facebook/auth';
+			// Use window.location.assign for better error handling
+			window.location.assign('/api/facebook/auth');
 		} catch (error) {
 			console.error('❌ Redirect error:', error);
 			connecting = false;
-			setupError = 'Failed to redirect. Please try again.';
+			setupError = `Failed to connect: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`;
 		}
 	}
 
@@ -475,6 +482,26 @@
 											</div>
 										{/if}
 									</button>
+
+									{#if setupError}
+										<div class="p-4 bg-red-500/10 border border-red-500/30 rounded-lg flex items-start">
+											<AlertCircle class="w-5 h-5 text-red-400 mr-3 mt-0.5 flex-shrink-0" />
+											<div>
+												<p class="text-red-400 font-medium">Connection Error</p>
+												<p class="text-red-400/80 text-sm mt-1">{setupError}</p>
+											</div>
+										</div>
+									{/if}
+
+									{#if setupSuccess}
+										<div class="p-4 bg-green-500/10 border border-green-500/30 rounded-lg flex items-start">
+											<CheckCircle class="w-5 h-5 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
+											<div>
+												<p class="text-green-400 font-medium">Connected!</p>
+												<p class="text-green-400/80 text-sm mt-1">Checking your setup...</p>
+											</div>
+										</div>
+									{/if}
 
 									<p class="text-center text-sm text-gray-500">
 										Secure connection via Facebook • We'll never post without your permission
