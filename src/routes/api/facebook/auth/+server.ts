@@ -12,12 +12,7 @@ export const GET: RequestHandler = async (event) => {
 	console.log('  Cookies:', event.cookies.getAll());
 
 	try {
-		// TEMPORARILY BYPASS AUTH FOR TESTING
-		const user = event.locals.user;
-		if (!user) {
-			console.error('❌ User not authenticated - OAuth requires login');
-			throw redirect(302, '/dashboard/ads?error=not_logged_in');
-		}
+		const user = await requireAuth(event);
 
 		console.log('✅ User authenticated:', user.id, user.email);
 		console.log('  App ID:', FACEBOOK_APP_ID ? 'Set' : 'MISSING');
