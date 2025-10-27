@@ -26,10 +26,6 @@
 	let setupSuccess = false;
 
 	onMount(async () => {
-		console.log('🟢 Ads page mounted');
-		console.log('🟢 Initial activeTab:', activeTab);
-		console.log('🟢 Initial loading:', loading);
-
 		// Temporarily skip loading stats/campaigns due to SDK bundling issue
 		// await loadData();
 		loading = false;
@@ -47,10 +43,6 @@
 			setupError = getErrorMessage(errorParam);
 			activeTab = 'setup';
 		}
-
-		console.log('🟢 Page initialization complete');
-		console.log('🟢 Final activeTab:', activeTab);
-		console.log('🟢 adAccount:', adAccount);
 	});
 
 	function getErrorMessage(error: string): string {
@@ -111,21 +103,14 @@
 
 	// Simple OAuth connection (one-click for beginners)
 	async function connectWithFacebook() {
-		console.log('🔵 Connect with Facebook clicked');
 		setupError = '';
 		connecting = true;
 
 		try {
-			console.log('🔵 Testing API endpoint...');
-			// First, test if the endpoint is reachable
-			const testResponse = await fetch('/api/facebook/auth', { method: 'HEAD' }).catch(() => null);
-			console.log('🔵 Endpoint test:', testResponse?.status || 'failed');
-
-			console.log('🔵 Redirecting to /api/facebook/auth');
-			// Use window.location.assign for better error handling
+			// Redirect to Facebook OAuth
 			window.location.assign('/api/facebook/auth');
 		} catch (error) {
-			console.error('❌ Redirect error:', error);
+			console.error('Redirect error:', error);
 			connecting = false;
 			setupError = `Failed to connect: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`;
 		}
@@ -206,8 +191,6 @@
 				Facebook Ads Manager
 			</h1>
 			<p class="text-gray-400 mt-1">Launch campaigns in minutes - no experience needed</p>
-			<!-- DEBUG: Show active tab -->
-			<p class="text-xs text-yellow-400 mt-1 font-mono">DEBUG: activeTab = "{activeTab}" | loading = {loading} | adAccount = {adAccount ? 'exists' : 'null'}</p>
 		</div>
 		{#if adAccount?.isConnected && adAccount?.setupTier === 3}
 			<button
@@ -278,11 +261,7 @@
 								Never run Facebook ads before? No problem! We'll guide you through everything step-by-step.
 							</p>
 							<button
-								on:click={() => {
-									console.log('🟢 Get Started clicked - switching to setup tab');
-									activeTab = 'setup';
-									console.log('🟢 Active tab is now:', activeTab);
-								}}
+								on:click={() => activeTab = 'setup'}
 								class="inline-flex items-center px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-lg font-semibold rounded-xl transition-all shadow-lg hover:shadow-xl"
 							>
 								Get Started
