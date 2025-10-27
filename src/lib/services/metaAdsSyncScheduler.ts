@@ -5,7 +5,7 @@
  * Tracks spend, impressions, clicks, leads for commission calculations
  */
 
-import { MetaAdsService } from '../server/meta-ads-service.server';
+// import { MetaAdsService } from '../server/meta-ads-service.server'; // Removed
 import prisma from '../config/database';
 
 export class MetaAdsSyncScheduler {
