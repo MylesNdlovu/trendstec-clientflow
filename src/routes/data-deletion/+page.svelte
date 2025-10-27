@@ -1,7 +1,7 @@
 <script lang="ts">
 	const appName = 'TrendsTec ClientFlow';
 	const contactEmail = 'privacy@trendstec.com';
-	const supportEmail = 'support@trendstec.com';
+	const supportEmail = 'info@trendstec.com';
 </script>
 
 <svelte:head>

@@ -2,7 +2,7 @@
 	const appName = 'TrendsTec ClientFlow';
 	const companyName = 'TrendsTec';
 	const contactEmail = 'legal@trendstec.com';
-	const supportEmail = 'support@trendstec.com';
+	const supportEmail = 'info@trendstec.com';
 	const lastUpdated = 'October 28, 2025';
 </script>
 
