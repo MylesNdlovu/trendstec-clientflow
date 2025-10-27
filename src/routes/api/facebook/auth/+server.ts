@@ -47,7 +47,10 @@ export const GET: RequestHandler = async (event) => {
 		console.log('✅ Redirecting to Facebook OAuth URL:', authUrl.substring(0, 100) + '...');
 		throw redirect(302, authUrl);
 	} catch (error) {
-		if (error instanceof Response) throw error;
+		// Let redirects pass through
+		if (error instanceof Response || (error && typeof error === 'object' && 'status' in error && 'location' in error)) {
+			throw error;
+		}
 
 		const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
 		console.error('❌ Error initiating Facebook OAuth:', errorMessage, error);
