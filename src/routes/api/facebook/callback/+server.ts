@@ -3,9 +3,9 @@ import type { RequestHandler } from './$types';
 import prisma from '$lib/config/database';
 import { encrypt } from '$lib/server/security/encryption';
 
-const FACEBOOK_APP_ID = process.env.FACEBOOK_APP_ID || '';
-const FACEBOOK_APP_SECRET = process.env.FACEBOOK_APP_SECRET || '';
-const REDIRECT_URI = process.env.PUBLIC_BASE_URL + '/api/facebook/callback';
+const FACEBOOK_APP_ID = (process.env.FACEBOOK_APP_ID || '').trim();
+const FACEBOOK_APP_SECRET = (process.env.FACEBOOK_APP_SECRET || '').trim();
+const REDIRECT_URI = ((process.env.PUBLIC_BASE_URL || '').trim() + '/api/facebook/callback').trim();
 
 // GET: Handle Facebook OAuth callback
 export const GET: RequestHandler = async ({ url, cookies }) => {

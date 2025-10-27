@@ -3,8 +3,8 @@ import type { RequestHandler } from './$types';
 import { requireAuth } from '$lib/server/auth/middleware';
 
 // Facebook OAuth Configuration
-const FACEBOOK_APP_ID = process.env.FACEBOOK_APP_ID || '';
-const REDIRECT_URI = process.env.PUBLIC_BASE_URL + '/api/facebook/callback';
+const FACEBOOK_APP_ID = (process.env.FACEBOOK_APP_ID || '').trim();
+const REDIRECT_URI = ((process.env.PUBLIC_BASE_URL || '').trim() + '/api/facebook/callback').trim();
 
 // GET: Initiate Facebook OAuth flow
 export const GET: RequestHandler = async (event) => {
@@ -23,9 +23,7 @@ export const GET: RequestHandler = async (event) => {
 			throw redirect(302, '/dashboard/ads?error=oauth_failed&details=missing_app_id');
 		}
 
-		// Trim the BASE_URL to remove any newlines
-		const cleanRedirectUri = REDIRECT_URI.trim();
-		console.log('  Clean Redirect URI:', cleanRedirectUri);
+		console.log('  Redirect URI:', REDIRECT_URI);
 
 		// Facebook OAuth URL with required permissions
 		const permissions = [
@@ -39,7 +37,7 @@ export const GET: RequestHandler = async (event) => {
 
 		const authUrl = `https://www.facebook.com/v19.0/dialog/oauth?` +
 			`client_id=${FACEBOOK_APP_ID}` +
-			`&redirect_uri=${encodeURIComponent(cleanRedirectUri)}` +
+			`&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
 			`&scope=${permissions}` +
 			`&response_type=code` +
 			`&state=${user.id}`;
