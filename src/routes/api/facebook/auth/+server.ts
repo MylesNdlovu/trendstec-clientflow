@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-// import { requireAuth } from '$lib/server/auth/middleware'; // Temporarily disabled for testing
+import { requireAuth } from '$lib/server/auth/middleware';
 
 // Facebook OAuth Configuration
 const FACEBOOK_APP_ID = (process.env.FACEBOOK_APP_ID || '').trim();
@@ -12,11 +12,9 @@ export const GET: RequestHandler = async (event) => {
 	console.log('  Cookies:', event.cookies.getAll());
 
 	try {
-		// Temporarily skip auth check for testing
-		// const user = await requireAuth(event);
-		const user = { id: 'test-user-id', email: 'test@example.com', role: 'user', name: 'Test User' };
+		const user = await requireAuth(event);
 
-		console.log('✅ User (temp):', user.id, user.email);
+		console.log('✅ User authenticated:', user.id, user.email);
 		console.log('  App ID:', FACEBOOK_APP_ID ? 'Set' : 'MISSING');
 		console.log('  Redirect URI:', REDIRECT_URI);
 
