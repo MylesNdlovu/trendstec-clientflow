@@ -88,12 +88,12 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 					setupTier: setupStatus.tier,
 					pageId: setupStatus.pageId,
 					pageName: setupStatus.pageName,
-					pageAccessToken: setupStatus.pageAccessToken ? encrypt(setupStatus.pageAccessToken) : null,
+					pageAccessToken: setupStatus.pageAccessToken ? JSON.stringify(encrypt(setupStatus.pageAccessToken)) : null,
 					businessId: setupStatus.businessId,
 					businessName: setupStatus.businessName,
 					adAccountId: setupStatus.adAccountId,
 					adAccountName: setupStatus.adAccountName,
-					accessToken: encrypt(longLivedToken),
+					accessToken: JSON.stringify(encrypt(longLivedToken)),
 					tokenExpiresAt: longLivedData.expires_in
 						? new Date(Date.now() + longLivedData.expires_in * 1000)
 						: null,
@@ -112,12 +112,12 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 					setupTier: setupStatus.tier,
 					pageId: setupStatus.pageId,
 					pageName: setupStatus.pageName,
-					pageAccessToken: setupStatus.pageAccessToken ? encrypt(setupStatus.pageAccessToken) : null,
+					pageAccessToken: setupStatus.pageAccessToken ? JSON.stringify(encrypt(setupStatus.pageAccessToken)) : null,
 					businessId: setupStatus.businessId,
 					businessName: setupStatus.businessName,
 					adAccountId: setupStatus.adAccountId,
 					adAccountName: setupStatus.adAccountName,
-					accessToken: encrypt(longLivedToken),
+					accessToken: JSON.stringify(encrypt(longLivedToken)),
 					tokenExpiresAt: longLivedData.expires_in
 						? new Date(Date.now() + longLivedData.expires_in * 1000)
 						: null,
