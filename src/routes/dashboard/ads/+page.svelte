@@ -26,7 +26,9 @@
 	let setupSuccess = false;
 
 	onMount(async () => {
-		await loadData();
+		// Temporarily skip loading stats/campaigns due to SDK bundling issue
+		// await loadData();
+		loading = false;
 
 		// Check for OAuth callback success/error
 		const urlParams = new URLSearchParams(window.location.search);
