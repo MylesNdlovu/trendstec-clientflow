@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { requireAuth } from '$lib/server/auth/middleware';
+// import { requireAuth } from '$lib/server/auth/middleware'; // Temporarily disabled for testing
 
 // Facebook OAuth Configuration
 const FACEBOOK_APP_ID = (process.env.FACEBOOK_APP_ID || '').trim();
@@ -27,14 +27,15 @@ export const GET: RequestHandler = async (event) => {
 
 		console.log('  Redirect URI:', REDIRECT_URI);
 
-		// Facebook OAuth URL with required permissions
+		// Facebook OAuth URL with required permissions (updated for current API)
 		const permissions = [
+			'public_profile',
+			'email',
 			'pages_show_list',
 			'pages_read_engagement',
-			'pages_manage_ads',
-			'business_management',
 			'ads_management',
-			'ads_read'
+			'ads_read',
+			'business_management'
 		].join(',');
 
 		const authUrl = `https://www.facebook.com/v19.0/dialog/oauth?` +
