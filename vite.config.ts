@@ -3,17 +3,6 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
 	plugins: [sveltekit()],
-	ssr: {
-		noExternal: ['facebook-nodejs-business-sdk']
-	},
-	optimizeDeps: {
-		exclude: ['facebook-nodejs-business-sdk']
-	},
-	build: {
-		rollupOptions: {
-			external: ['facebook-nodejs-business-sdk']
-		}
-	},
 	server: {
 		headers: {
 			'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
