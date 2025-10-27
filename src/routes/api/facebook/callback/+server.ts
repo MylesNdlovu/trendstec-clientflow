@@ -73,82 +73,14 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 		const setupStatus = await detectFacebookSetup(longLivedToken);
 		console.log('Setup status:', setupStatus);
 
-		// Save or update ad account
-		console.log('Checking for existing account for userId:', state);
-		const existingAccount = await prisma.facebookAdAccount.findFirst({
-			where: { userId: state }
-		});
-		console.log('Existing account found:', !!existingAccount);
+		// TEMPORARILY SKIP DATABASE SAVE FOR TESTING
+		console.log('TEMPORARILY SKIPPING DATABASE SAVE - OAuth flow test');
+		console.log('Would save for userId:', state);
+		console.log('Token length:', longLivedToken.length);
 
-		if (existingAccount) {
-			console.log('Updating existing account...');
-			await prisma.facebookAdAccount.update({
-				where: { id: existingAccount.id },
-				data: {
-					setupTier: setupStatus.tier,
-					pageId: setupStatus.pageId,
-					pageName: setupStatus.pageName,
-					pageAccessToken: setupStatus.pageAccessToken ? JSON.stringify(encrypt(setupStatus.pageAccessToken)) : null,
-					businessId: setupStatus.businessId,
-					businessName: setupStatus.businessName,
-					adAccountId: setupStatus.adAccountId,
-					adAccountName: setupStatus.adAccountName,
-					accessToken: JSON.stringify(encrypt(longLivedToken)),
-					tokenExpiresAt: longLivedData.expires_in
-						? new Date(Date.now() + longLivedData.expires_in * 1000)
-						: null,
-					canBoostPosts: setupStatus.tier >= 1,
-					canCreateCampaigns: setupStatus.tier >= 3,
-					isConnected: true,
-					lastSyncAt: new Date()
-				}
-			});
-			console.log('Account updated successfully');
-		} else {
-			console.log('Creating new account...');
-			await prisma.facebookAdAccount.create({
-				data: {
-					userId: state,
-					setupTier: setupStatus.tier,
-					pageId: setupStatus.pageId,
-					pageName: setupStatus.pageName,
-					pageAccessToken: setupStatus.pageAccessToken ? JSON.stringify(encrypt(setupStatus.pageAccessToken)) : null,
-					businessId: setupStatus.businessId,
-					businessName: setupStatus.businessName,
-					adAccountId: setupStatus.adAccountId,
-					adAccountName: setupStatus.adAccountName,
-					accessToken: JSON.stringify(encrypt(longLivedToken)),
-					tokenExpiresAt: longLivedData.expires_in
-						? new Date(Date.now() + longLivedData.expires_in * 1000)
-						: null,
-					canBoostPosts: setupStatus.tier >= 1,
-					canCreateCampaigns: setupStatus.tier >= 3,
-					isConnected: true,
-					lastSyncAt: new Date()
-				}
-			});
-			console.log('Account created successfully');
-		}
-
-		// Redirect based on setup tier
-		console.log('Redirecting based on tier:', setupStatus.tier);
-		if (setupStatus.tier === 3) {
-			// Full setup - go to dashboard
-			console.log('Redirecting to success page (tier 3)');
-			throw redirect(302, '/dashboard/ads?success=connected');
-		} else if (setupStatus.tier === 2) {
-			// Has Business Manager but no Ad Account - show guided setup
-			console.log('Redirecting to ad account setup (tier 2)');
-			throw redirect(302, '/dashboard/ads/setup?step=ad_account');
-		} else if (setupStatus.tier === 1) {
-			// Only has page - can use basic boosting or upgrade
-			console.log('Redirecting to basic connected page (tier 1)');
-			throw redirect(302, '/dashboard/ads?success=basic_connected&upgrade=available');
-		} else {
-			// No page - needs to create one
-			console.log('Redirecting to page setup (tier 0)');
-			throw redirect(302, '/dashboard/ads/setup?step=page');
-		}
+		// Just redirect to success for now to test OAuth flow
+		console.log('OAuth flow successful! Redirecting to dashboard...');
+		throw redirect(302, '/dashboard/ads?success=oauth_test&tier=' + setupStatus.tier);
 	} catch (error) {
 		if (error instanceof Response) throw error;
 
