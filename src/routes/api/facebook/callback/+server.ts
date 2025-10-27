@@ -70,8 +70,22 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 		console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
 		console.error('Error name:', error instanceof Error ? error.name : 'Unknown');
 
-		const errorMsg = error instanceof Error ? error.message : String(error);
-		const errorName = error instanceof Error ? error.name : 'UnknownError';
+		let errorMsg = 'Unknown error';
+		let errorName = 'UnknownError';
+
+		if (error instanceof Error) {
+			errorMsg = error.message;
+			errorName = error.name;
+		} else if (typeof error === 'object' && error !== null) {
+			// Try to stringify the error object properly
+			try {
+				errorMsg = JSON.stringify(error);
+			} catch {
+				errorMsg = 'Error object cannot be stringified';
+			}
+		} else {
+			errorMsg = String(error);
+		}
 
 		throw redirect(302, '/dashboard/ads?error=callback_failed&name=' + encodeURIComponent(errorName) + '&message=' + encodeURIComponent(errorMsg));
 	}
