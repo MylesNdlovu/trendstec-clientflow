@@ -25,15 +25,10 @@ export const GET: RequestHandler = async (event) => {
 
 		console.log('  Redirect URI:', REDIRECT_URI);
 
-		// Facebook OAuth URL with basic permissions that work without app review
-		// Advanced permissions (ads_management, business_management) require:
-		// 1. App to be in Live mode (not Development)
-		// 2. Facebook App Review approval
-		// 3. Business verification
-		const permissions = [
-			'public_profile',
-			'email'
-		].join(',');
+		// Facebook OAuth URL with minimal permissions
+		// Only public_profile works without any setup
+		// Even 'email' requires app configuration
+		const permissions = 'public_profile';
 
 		const authUrl = `https://www.facebook.com/v19.0/dialog/oauth?` +
 			`client_id=${FACEBOOK_APP_ID}` +
