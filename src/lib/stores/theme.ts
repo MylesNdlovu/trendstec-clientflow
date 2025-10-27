@@ -131,4 +131,10 @@ export const mattBlackColors = {
 	textMuted: '#9e9e9e' // Muted text
 };
 
+// Init function for layout compatibility
+export function initTheme() {
+	// Theme already initialized at module load
+	console.log('Theme system ready');
+}
+
 export { colorSchemes };
