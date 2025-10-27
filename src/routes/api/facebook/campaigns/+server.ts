@@ -4,6 +4,7 @@ import { requireAuth } from '$lib/server/auth/middleware';
 import { FacebookAPI } from '$lib/server/facebook-api';
 import prisma from '$lib/config/database';
 import { decrypt } from '$lib/server/security/encryption';
+import { MetaAdsService } from '$lib/server/meta-ads-service-stub';
 
 // GET: Get user's ad campaigns with live Meta Ads data
 export const GET: RequestHandler = async (event) => {
