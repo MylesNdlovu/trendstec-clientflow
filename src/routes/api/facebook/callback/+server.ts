@@ -142,41 +142,50 @@ async function detectFacebookSetup(accessToken: string) {
 	};
 
 	try {
-		// 1. Check for Facebook Pages
+		// 1. Check for Facebook Pages (requires pages_show_list permission)
 		const pagesResponse = await fetch(
 			`https://graph.facebook.com/v19.0/me/accounts?access_token=${accessToken}&fields=id,name,access_token`
 		);
 		const pagesData = await pagesResponse.json();
 
-		if (pagesData.data && pagesData.data.length > 0) {
+		// Check if we got an error due to insufficient permissions
+		if (!pagesData.error && pagesData.data && pagesData.data.length > 0) {
 			setupStatus.tier = 1;
 			setupStatus.pageId = pagesData.data[0].id;
 			setupStatus.pageName = pagesData.data[0].name;
 			setupStatus.pageAccessToken = pagesData.data[0].access_token;
+		} else if (pagesData.error) {
+			console.log('Pages permission not granted:', pagesData.error.message);
 		}
 
-		// 2. Check for Business Manager
+		// 2. Check for Business Manager (requires business_management permission)
 		const businessResponse = await fetch(
 			`https://graph.facebook.com/v19.0/me/businesses?access_token=${accessToken}&fields=id,name`
 		);
 		const businessData = await businessResponse.json();
 
-		if (businessData.data && businessData.data.length > 0) {
+		// Check if we got an error due to insufficient permissions
+		if (!businessData.error && businessData.data && businessData.data.length > 0) {
 			setupStatus.tier = 2;
 			setupStatus.businessId = businessData.data[0].id;
 			setupStatus.businessName = businessData.data[0].name;
 
-			// 3. Check for Ad Accounts under Business Manager
+			// 3. Check for Ad Accounts under Business Manager (requires ads_management permission)
 			const adAccountsResponse = await fetch(
 				`https://graph.facebook.com/v19.0/${setupStatus.businessId}/adaccounts?access_token=${accessToken}&fields=id,name,account_status,currency,timezone_name`
 			);
 			const adAccountsData = await adAccountsResponse.json();
 
-			if (adAccountsData.data && adAccountsData.data.length > 0) {
+			// Check if we got an error due to insufficient permissions
+			if (!adAccountsData.error && adAccountsData.data && adAccountsData.data.length > 0) {
 				setupStatus.tier = 3;
 				setupStatus.adAccountId = adAccountsData.data[0].id;
 				setupStatus.adAccountName = adAccountsData.data[0].name;
+			} else if (adAccountsData.error) {
+				console.log('Ad accounts permission not granted:', adAccountsData.error.message);
 			}
+		} else if (businessData.error) {
+			console.log('Business permission not granted:', businessData.error.message);
 		}
 	} catch (error) {
 		console.error('Error detecting Facebook setup:', error);
