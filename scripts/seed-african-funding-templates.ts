@@ -10,8 +10,8 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// African countries for targeting
-const africanCountries = ['ZA', 'NG', 'KE', 'GH', 'EG', 'UG', 'TZ', 'ZW', 'RW', 'ET'];
+// Top 10 most lucrative African countries for forex trading
+const africanCountries = ['ZA', 'NG', 'KE', 'GH', 'EG', 'MA', 'TZ', 'UG', 'ZM', 'BW'];
 
 const fundingTemplates = [
 	{
@@ -74,7 +74,7 @@ const fundingTemplates = [
 	},
 	{
 		name: 'Professional Trader Challenge - $1000',
-		description: 'For experienced traders: Instant $1000 funding with 80% profit split. Prove your skills and scale to $100K.',
+		description: 'For experienced traders: Instant $1000 funding. Prove your skills and scale to $100K account.',
 		category: 'conversion',
 		isPublic: true,
 		isActive: true,
@@ -83,9 +83,9 @@ const fundingTemplates = [
 			callToAction: 'APPLY_NOW',
 			dailyBudget: 70,
 			lifetimeBudget: null,
-			headline: 'Serious Traders: 80% Profit Split',
+			headline: 'Serious Traders: Get $1000 Now',
 			description: '$1000 instant funding → Scale to $100K. African traders only.',
-			adCopy: '💰 For serious traders only: Get instant $1000 funding + keep 80% of ALL profits. Scale to $100K account in 90 days. We have funded 1,200+ African traders. Only 25 spots available this month - apply now!',
+			adCopy: '💰 For serious traders only: Get instant $1000 funding and keep ALL your profits. Scale to $100K account in 90 days. We have funded 1,200+ African traders. Only 25 spots available this month - apply now!',
 			targeting: {
 				age_min: 25,
 				age_max: 60,
@@ -143,7 +143,7 @@ const fundingTemplates = [
 			lifetimeBudget: null,
 			headline: 'Students: Trade With $1000 FREE',
 			description: 'Study & trade - Get instant funding + expert mentorship',
-			adCopy: '🎓 African students & young professionals: Get instant $1000 trading account + 1-on-1 mentorship. Trade part-time, keep 70% profits. Perfect side hustle while studying. Limited to 30 students per country!',
+			adCopy: '🎓 African students & young professionals: Get instant $1000 trading account + 1-on-1 mentorship. Trade part-time, keep ALL your profits. Perfect side hustle while studying. Limited to 30 students per country!',
 			targeting: {
 				age_min: 18,
 				age_max: 30,
