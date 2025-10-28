@@ -25,6 +25,7 @@
 		{ name: 'Dashboard', href: '/dashboard', icon: Home, requiresAdmin: false },
 		{ name: 'Leads', href: '/dashboard/leads', icon: Users, requiresAdmin: false },
 		{ name: 'Ads', href: '/dashboard/ads', icon: TrendingUp, requiresAdmin: false },
+		{ name: 'Campaigns', href: '/dashboard/ads/campaigns', icon: TrendingUp, requiresAdmin: false },
 		{ name: 'Ad Templates', href: '/dashboard/ads/templates', icon: FileText, requiresAdmin: false },
 		{ name: 'Credentials', href: '/dashboard/credentials', icon: Shield, requiresAdmin: false },
 		{ name: 'Forms', href: '/dashboard/forms', icon: FormInput, requiresAdmin: false },
