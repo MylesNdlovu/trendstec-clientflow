@@ -1,30 +1,45 @@
-import { json } from '@sveltejs/kit';
+import { json, error as svelteError } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { requireAuth } from '$lib/server/auth/middleware';
-import prisma from '$lib/config/database';
+import { prisma } from '$lib/prisma';
 
-// GET: Get active ad templates
-export const GET: RequestHandler = async (event) => {
+/**
+ * GET /api/facebook/templates
+ * Get public, active ad templates (for users)
+ */
+export const GET: RequestHandler = async ({ locals }) => {
 	try {
-		await requireAuth(event);
+		// Check authentication
+		if (!locals.user) {
+			throw svelteError(401, 'Unauthorized');
+		}
 
+		// Get public, active templates
 		const templates = await prisma.adTemplate.findMany({
 			where: {
 				isActive: true,
 				isPublic: true
 			},
-			orderBy: { usageCount: 'desc' }
+			orderBy: { createdAt: 'desc' },
+			select: {
+				id: true,
+				name: true,
+				description: true,
+				category: true,
+				templateData: true,
+				thumbnailUrl: true,
+				usageCount: true,
+				createdAt: true
+			}
 		});
 
-		return json({
-			success: true,
-			templates
-		});
+		return json({ templates });
 	} catch (error) {
 		console.error('Error fetching templates:', error);
-		return json(
-			{ success: false, error: 'Failed to fetch templates' },
-			{ status: 500 }
-		);
+
+		if (error && typeof error === 'object' && 'status' in error) {
+			throw error;
+		}
+
+		throw svelteError(500, 'Failed to fetch templates');
 	}
 };
