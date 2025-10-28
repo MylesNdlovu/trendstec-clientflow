@@ -26,16 +26,12 @@
 	let setupSuccess = false;
 
 	onMount(async () => {
-		// Temporarily skip loading stats/campaigns due to SDK bundling issue
-		// await loadData();
-		loading = false;
-
-		// Check for OAuth callback success/error
+		// Check for OAuth callback success/error first
 		const urlParams = new URLSearchParams(window.location.search);
 		const successParam = urlParams.get('success');
 		const errorParam = urlParams.get('error');
 
-		if (successParam === 'connected') {
+		if (successParam === 'connected' || successParam === 'oauth_test' || successParam === 'basic_connected') {
 			setupSuccess = true;
 			// Clear URL params
 			window.history.replaceState({}, '', '/dashboard/ads');
@@ -43,6 +39,9 @@
 			setupError = getErrorMessage(errorParam);
 			activeTab = 'setup';
 		}
+
+		// Load account data
+		await loadData();
 	});
 
 	function getErrorMessage(error: string): string {
@@ -584,13 +583,50 @@
 						{:else}
 							<!-- Connected - Show Setup Progress -->
 							<div class="space-y-6">
+								<!-- Success Message -->
 								<div class="bg-green-500/10 border border-green-500/20 rounded-xl p-6 flex items-center">
 									<CheckCircle class="w-8 h-8 text-green-400 mr-4 flex-shrink-0" />
 									<div>
 										<h3 class="text-xl font-bold text-white">Facebook Connected!</h3>
-										<p class="text-gray-400">Now let's finish setting up your ad account</p>
+										<p class="text-gray-400">
+											{#if adAccount?.setupTier === 0}
+												Checking your setup...
+											{:else}
+												Now let's finish setting up your ad account
+											{/if}
+										</p>
 									</div>
 								</div>
+
+								<!-- Tier 0 Warning: Need More Permissions -->
+								{#if adAccount?.setupTier === 0}
+									<div class="bg-orange-500/10 border-2 border-orange-500/30 rounded-xl p-6">
+										<div class="flex items-start">
+											<AlertCircle class="w-8 h-8 text-orange-400 mr-4 flex-shrink-0 mt-1" />
+											<div class="flex-1">
+												<h3 class="text-xl font-bold text-white mb-2">Additional Permissions Needed</h3>
+												<p class="text-gray-300 mb-4">
+													You're connected with basic permissions only. To manage ads, we need access to your Facebook Pages and Ad Accounts.
+												</p>
+												<div class="bg-black/30 rounded-lg p-4 mb-4">
+													<p class="text-sm text-gray-400 mb-2">
+														<strong class="text-white">What's happening:</strong>
+													</p>
+													<ul class="text-sm text-gray-400 space-y-1 list-disc pl-5">
+														<li>We've submitted a request to Facebook for additional permissions</li>
+														<li>Facebook typically reviews within 3-7 business days</li>
+														<li>Once approved, you'll be able to reconnect with full access</li>
+													</ul>
+												</div>
+												<div class="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+													<p class="text-sm text-blue-300 mb-2">
+														<strong>In the meantime:</strong> You can start by creating your Facebook Page and Business Manager below. When permissions are approved, you'll just need to click "Reconnect" and you'll be all set!
+													</p>
+												</div>
+											</div>
+										</div>
+									</div>
+								{/if}
 
 								<!-- Progress Steps with Simple Language -->
 								<div class="space-y-4">
@@ -692,6 +728,7 @@
 									</div>
 								</div>
 
+								<!-- Check Setup Button -->
 								<button
 									on:click={checkSetupProgress}
 									disabled={connecting}
@@ -706,6 +743,36 @@
 										I've Completed These Steps - Check My Setup
 									{/if}
 								</button>
+
+								<!-- Reconnect Button for Tier 0 users -->
+								{#if adAccount?.setupTier === 0}
+									<div class="bg-blue-500/10 border-2 border-blue-500/30 rounded-xl p-6">
+										<div class="flex items-start">
+											<Sparkles class="w-8 h-8 text-blue-400 mr-4 flex-shrink-0 mt-1" />
+											<div class="flex-1">
+												<h4 class="text-lg font-bold text-white mb-2">Ready to Get Full Access?</h4>
+												<p class="text-gray-300 text-sm mb-4">
+													Once Facebook approves our permission request (usually 3-7 days), click the button below to reconnect with full access to your Pages, Business Manager, and Ad Accounts.
+												</p>
+												<button
+													on:click={connectWithFacebook}
+													disabled={connecting}
+													class="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+												>
+													{#if connecting}
+														<div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+														Connecting...
+													{:else}
+														<svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+															<path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+														</svg>
+														Reconnect with Full Permissions
+													{/if}
+												</button>
+											</div>
+										</div>
+									</div>
+								{/if}
 
 								{#if adAccount?.setupTier === 3}
 									<div class="bg-gradient-to-br from-green-500/10 to-teal-500/10 border-2 border-green-500/30 rounded-2xl p-8 text-center">
