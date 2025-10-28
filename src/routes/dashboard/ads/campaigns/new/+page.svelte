@@ -28,7 +28,7 @@
 			age_min: data.template?.templateData?.targeting?.age_min || 25,
 			age_max: data.template?.templateData?.targeting?.age_max || 55,
 			genders: data.template?.templateData?.targeting?.genders || [1, 2],
-			geo_locations: data.template?.templateData?.targeting?.geo_locations || { countries: ['US'] }
+			geo_locations: data.template?.templateData?.targeting?.geo_locations || { countries: ['ZA', 'NG', 'KE', 'GH', 'EG', 'MA', 'TZ', 'UG', 'ZM', 'BW'] }
 		}
 	};
 
@@ -49,13 +49,18 @@
 		{ value: 'APPLY_NOW', label: 'Apply Now' }
 	];
 
+	// Top 10 lucrative African forex markets
 	const countries = [
-		{ code: 'US', name: 'United States' },
-		{ code: 'CA', name: 'Canada' },
-		{ code: 'GB', name: 'United Kingdom' },
-		{ code: 'AU', name: 'Australia' },
-		{ code: 'NZ', name: 'New Zealand' },
-		{ code: 'SG', name: 'Singapore' }
+		{ code: 'ZA', name: '🇿🇦 South Africa' },
+		{ code: 'NG', name: '🇳🇬 Nigeria' },
+		{ code: 'KE', name: '🇰🇪 Kenya' },
+		{ code: 'GH', name: '🇬🇭 Ghana' },
+		{ code: 'EG', name: '🇪🇬 Egypt' },
+		{ code: 'MA', name: '🇲🇦 Morocco' },
+		{ code: 'TZ', name: '🇹🇿 Tanzania' },
+		{ code: 'UG', name: '🇺🇬 Uganda' },
+		{ code: 'ZM', name: '🇿🇲 Zambia' },
+		{ code: 'BW', name: '🇧🇼 Botswana' }
 	];
 
 	function handleImageUpload(e: Event) {
