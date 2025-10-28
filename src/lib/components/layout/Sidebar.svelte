@@ -11,7 +11,8 @@
 		UserCog,
 		Zap,
 		TrendingUp,
-		FileText
+		FileText,
+		RefreshCw
 	} from 'lucide-svelte';
 	import { theme, getThemeClasses } from '$lib/stores/theme';
 
@@ -32,6 +33,7 @@
 		{ name: '— Admin Only —', href: '#', icon: Shield, requiresAdmin: true, isSection: true },
 		{ name: 'User Management', href: '/dashboard/admin/users', icon: UserCog, requiresAdmin: true },
 		{ name: 'Ad Template Manager', href: '/dashboard/admin/templates', icon: FileText, requiresAdmin: true },
+		{ name: 'Reseed Templates', href: '/dashboard/admin/reseed-templates', icon: RefreshCw, requiresAdmin: true },
 		{ name: 'Systeme.io Setup', href: '/dashboard/admin/systeme-setup', icon: Zap, requiresAdmin: true }
 	];
 
