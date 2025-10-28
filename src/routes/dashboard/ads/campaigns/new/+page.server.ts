@@ -29,14 +29,21 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 				}
 			});
 		} catch (error) {
-			console.error('Error loading template:', error);
+			console.error('[Campaign New Page] Error loading template:', error);
+			// Don't throw, just continue without template
 		}
 	}
 
 	// Load user's Facebook ad account
-	const adAccount = await prisma.facebookAdAccount.findUnique({
-		where: { userId: locals.user.id }
-	});
+	let adAccount = null;
+	try {
+		adAccount = await prisma.facebookAdAccount.findUnique({
+			where: { userId: locals.user.id }
+		});
+	} catch (error) {
+		console.error('[Campaign New Page] Error loading ad account:', error);
+		// Don't throw, page will show warning that FB not connected
+	}
 
 	return {
 		template,
