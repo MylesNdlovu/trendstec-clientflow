@@ -14,7 +14,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	// Load template if ID provided
 	if (templateId) {
 		try {
-			template = await prisma.adTemplate.findUnique({
+			template = await prisma.adTemplate.findFirst({
 				where: {
 					id: templateId,
 					isActive: true,
