@@ -10,7 +10,8 @@
 		LogOut,
 		UserCog,
 		Zap,
-		TrendingUp
+		TrendingUp,
+		FileText
 	} from 'lucide-svelte';
 	import { theme, getThemeClasses } from '$lib/stores/theme';
 
@@ -23,12 +24,14 @@
 		{ name: 'Dashboard', href: '/dashboard', icon: Home, requiresAdmin: false },
 		{ name: 'Leads', href: '/dashboard/leads', icon: Users, requiresAdmin: false },
 		{ name: 'Ads', href: '/dashboard/ads', icon: TrendingUp, requiresAdmin: false },
+		{ name: 'Ad Templates', href: '/dashboard/ads/templates', icon: FileText, requiresAdmin: false },
 		{ name: 'Credentials', href: '/dashboard/credentials', icon: Shield, requiresAdmin: false },
 		{ name: 'Forms', href: '/dashboard/forms', icon: FormInput, requiresAdmin: false },
 		{ name: 'Integrations', href: '/dashboard/integrations', icon: Activity, requiresAdmin: false },
 		{ name: 'Settings', href: '/dashboard/settings', icon: Settings, requiresAdmin: false },
 		{ name: '— Admin Only —', href: '#', icon: Shield, requiresAdmin: true, isSection: true },
 		{ name: 'User Management', href: '/dashboard/admin/users', icon: UserCog, requiresAdmin: true },
+		{ name: 'Ad Template Manager', href: '/dashboard/admin/templates', icon: FileText, requiresAdmin: true },
 		{ name: 'Systeme.io Setup', href: '/dashboard/admin/systeme-setup', icon: Zap, requiresAdmin: true }
 	];
 
