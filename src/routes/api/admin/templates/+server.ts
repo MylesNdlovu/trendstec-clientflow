@@ -1,6 +1,6 @@
 import { json, error as svelteError } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { prisma } from '$lib/server/db/client';
+import { prisma } from '$lib/prisma';
 
 /**
  * GET /api/admin/templates

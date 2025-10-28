@@ -1,6 +1,6 @@
 import { redirect, error as svelteError } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { prisma } from '$lib/server/db/client';
+import { prisma } from '$lib/prisma';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	// Check authentication
