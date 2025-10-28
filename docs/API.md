@@ -338,6 +338,151 @@ All authenticated endpoints require a valid JWT token in either:
 
 ---
 
+## 📱 Campaign Management
+
+### Admin Templates
+
+#### GET `/api/admin/templates`
+**Purpose**: List all ad templates (admin only)
+
+**Auth**: Required (ADMIN role)
+
+**Response** (200):
+```json
+{
+  "templates": [
+    {
+      "id": "clxxx",
+      "name": "Forex Lead Generation",
+      "description": "Proven template for generating forex trading leads",
+      "category": "lead_generation",
+      "templateData": {
+        "targeting": {
+          "age_min": 25,
+          "age_max": 55,
+          "genders": [1, 2],
+          "geo_locations": {
+            "countries": ["US", "CA"]
+          },
+          "interests": []
+        },
+        "adCopy": "Want to start trading forex?",
+        "headline": "Start Trading Today",
+        "description": "Learn forex with expert guidance",
+        "callToAction": "LEARN_MORE",
+        "objective": "LEAD_GENERATION",
+        "dailyBudget": 50,
+        "lifetimeBudget": null
+      },
+      "thumbnailUrl": null,
+      "isActive": true,
+      "isPublic": true,
+      "createdBy": "admin-user-id",
+      "usageCount": 15,
+      "createdAt": "2025-10-20T12:00:00Z",
+      "updatedAt": "2025-10-28T12:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+#### POST `/api/admin/templates`
+**Purpose**: Create new ad template (admin only)
+
+**Auth**: Required (ADMIN role)
+
+**Request**:
+```json
+{
+  "name": "Forex Lead Generation",
+  "description": "Proven template for generating forex trading leads",
+  "category": "lead_generation",
+  "templateData": {
+    "targeting": {
+      "age_min": 25,
+      "age_max": 55,
+      "genders": [1, 2],
+      "geo_locations": {
+        "countries": ["US"]
+      },
+      "interests": []
+    },
+    "adCopy": "Want to start trading forex?",
+    "headline": "Start Trading Today",
+    "description": "Learn forex with expert guidance",
+    "callToAction": "LEARN_MORE",
+    "objective": "LEAD_GENERATION",
+    "dailyBudget": 50,
+    "lifetimeBudget": null
+  },
+  "thumbnailUrl": null,
+  "isActive": true,
+  "isPublic": true
+}
+```
+
+**Required Fields**:
+- `name` (string) - Template name
+- `category` (string) - One of: `lead_generation`, `conversion`, `awareness`
+- `templateData` (object) - Must include `objective` and `callToAction`
+
+**Response** (201):
+```json
+{
+  "template": {
+    "id": "clxxx",
+    "name": "Forex Lead Generation",
+    ...
+  }
+}
+```
+
+---
+
+#### PUT `/api/admin/templates/:id`
+**Purpose**: Update existing ad template (admin only)
+
+**Auth**: Required (ADMIN role)
+
+**Request**: Same as POST, but all fields optional
+
+**Response** (200):
+```json
+{
+  "template": {
+    "id": "clxxx",
+    "name": "Updated Template Name",
+    ...
+  }
+}
+```
+
+**Errors**:
+- 404: Template not found
+
+---
+
+#### DELETE `/api/admin/templates/:id`
+**Purpose**: Delete ad template (admin only)
+
+**Auth**: Required (ADMIN role)
+
+**Response** (200):
+```json
+{
+  "success": true,
+  "message": "Template deleted successfully"
+}
+```
+
+**Errors**:
+- 404: Template not found
+- 400: Cannot delete template (campaigns are using it)
+
+---
+
 ## 💰 Commission Tracking
 
 ### GET `/api/commissions`
