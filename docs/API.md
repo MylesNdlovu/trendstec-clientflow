@@ -483,6 +483,35 @@ All authenticated endpoints require a valid JWT token in either:
 
 ---
 
+### User Templates
+
+#### GET `/api/facebook/templates`
+**Purpose**: Get public, active ad templates (for users)
+
+**Auth**: Required
+
+**Response** (200):
+```json
+{
+  "templates": [
+    {
+      "id": "clxxx",
+      "name": "Forex Lead Generation - US Market",
+      "description": "Proven template for generating high-quality forex trading leads...",
+      "category": "lead_generation",
+      "templateData": { ... },
+      "thumbnailUrl": null,
+      "usageCount": 15,
+      "createdAt": "2025-10-20T12:00:00Z"
+    }
+  ]
+}
+```
+
+**Note**: Only returns public and active templates.
+
+---
+
 ## 💰 Commission Tracking
 
 ### GET `/api/commissions`
