@@ -63,7 +63,7 @@
 		{ code: 'BW', name: '🇧🇼 Botswana' }
 	];
 
-	function handleImageUpload(e: Event) {
+	async function handleImageUpload(e: Event) {
 		const input = e.target as HTMLInputElement;
 		const file = input.files?.[0];
 
@@ -81,16 +81,42 @@
 			return;
 		}
 
-		// Create preview
+		// Create preview immediately for UX
 		const reader = new FileReader();
 		reader.onload = (e) => {
 			imagePreview = e.target?.result as string;
 		};
 		reader.readAsDataURL(file);
 
-		// TODO: Upload to storage service (Vercel Blob, S3, etc.)
-		// For now, we'll just use the preview
-		form.imageUrl = URL.createObjectURL(file);
+		// Upload to Vercel Blob
+		uploadingImage = true;
+		error = null;
+
+		try {
+			const formData = new FormData();
+			formData.append('file', file);
+
+			const res = await fetch('/api/upload/image', {
+				method: 'POST',
+				body: formData
+			});
+
+			const result = await res.json();
+
+			if (res.ok) {
+				form.imageUrl = result.url;
+				console.log('Image uploaded successfully:', result.url);
+			} else {
+				error = result.error || 'Failed to upload image';
+				imagePreview = null;
+			}
+		} catch (err) {
+			console.error('Upload error:', err);
+			error = 'Failed to upload image. Please try again.';
+			imagePreview = null;
+		} finally {
+			uploadingImage = false;
+		}
 	}
 
 	function removeImage() {
@@ -281,12 +307,18 @@
 					<div>
 						<label class="block text-sm font-medium text-gray-300 mb-2">Ad Image *</label>
 
-						{#if imagePreview}
+						{#if uploadingImage}
+							<div class="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-orange-500/50 rounded-lg bg-black/20">
+								<div class="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mb-4"></div>
+								<span class="text-sm text-gray-300">Uploading image...</span>
+							</div>
+						{:else if imagePreview}
 							<div class="relative">
 								<img src={imagePreview} alt="Ad preview" class="w-full rounded-lg" />
 								<button
 									on:click={removeImage}
-									class="absolute top-2 right-2 p-2 bg-red-500 hover:bg-red-600 rounded-full transition-colors"
+									disabled={uploadingImage}
+									class="absolute top-2 right-2 p-2 bg-red-500 hover:bg-red-600 rounded-full transition-colors disabled:opacity-50"
 								>
 									<X class="w-5 h-5 text-white" />
 								</button>
@@ -301,6 +333,7 @@
 									accept="image/*"
 									on:change={handleImageUpload}
 									class="hidden"
+									disabled={uploadingImage}
 								/>
 							</label>
 						{/if}

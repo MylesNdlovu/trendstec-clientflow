@@ -39,6 +39,7 @@
 	"dependencies": {
 		"@modelcontextprotocol/sdk": "^1.19.1",
 		"@prisma/client": "^5.6.0",
+		"@vercel/blob": "^2.0.0",
 		"@xyflow/svelte": "^0.1.39",
 		"bcrypt": "^6.0.0",
 		"bcryptjs": "^2.4.3",
@@ -67,7 +68,7 @@
 		"vite": "^7.0.4"
 	},
 	"optionalDependencies": {
-		"@rollup/rollup-linux-x64-gnu": "^4.52.5",
-		"@esbuild/linux-x64": "^0.24.2"
+		"@esbuild/linux-x64": "^0.24.2",
+		"@rollup/rollup-linux-x64-gnu": "^4.52.5"
 	}
 }
