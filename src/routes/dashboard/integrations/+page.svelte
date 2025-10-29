@@ -28,6 +28,14 @@
 	let webhookUrl = '';
 	let webhookCopied = false;
 
+	// Facebook Webhooks
+	let facebookWebhookUrl = '';
+	let facebookWebhookCopied = false;
+	let facebookWebhookStatus: any = null;
+	let loadingFacebookWebhook = false;
+	let testingFacebookWebhook = false;
+	let facebookWebhookTestResult: any = null;
+
 	let showAddForm = false;
 	let showEditForm = false;
 	let editingIntegrationId = '';
@@ -56,8 +64,10 @@
 	onMount(async () => {
 		await loadIntegrations();
 		await loadSystemeConfig();
+		await loadFacebookWebhookStatus();
 		if (typeof window !== 'undefined') {
 			webhookUrl = `${window.location.origin}/api/webhooks/systeme`;
+			facebookWebhookUrl = `${window.location.origin}/api/webhooks/facebook/leadgen`;
 		}
 	});
 
@@ -68,6 +78,50 @@
 			setTimeout(() => webhookCopied = false, 2000);
 		} catch (err) {
 			console.error('Failed to copy webhook URL:', err);
+		}
+	}
+
+	async function copyFacebookWebhook() {
+		try {
+			await navigator.clipboard.writeText(facebookWebhookUrl);
+			facebookWebhookCopied = true;
+			setTimeout(() => facebookWebhookCopied = false, 2000);
+		} catch (err) {
+			console.error('Failed to copy Facebook webhook URL:', err);
+		}
+	}
+
+	async function loadFacebookWebhookStatus() {
+		loadingFacebookWebhook = true;
+		try {
+			const response = await fetch('/api/webhooks/facebook/leadgen/status');
+			const result = await response.json();
+			if (result.success) {
+				facebookWebhookStatus = result.status;
+			}
+		} catch (err) {
+			console.error('Error loading Facebook webhook status:', err);
+		} finally {
+			loadingFacebookWebhook = false;
+		}
+	}
+
+	async function testFacebookWebhook() {
+		testingFacebookWebhook = true;
+		facebookWebhookTestResult = null;
+		try {
+			const response = await fetch('/api/webhooks/facebook/leadgen/test', {
+				method: 'POST'
+			});
+			const result = await response.json();
+			facebookWebhookTestResult = result;
+		} catch (err) {
+			facebookWebhookTestResult = {
+				success: false,
+				error: err instanceof Error ? err.message : 'Test failed'
+			};
+		} finally {
+			testingFacebookWebhook = false;
 		}
 	}
 
@@ -752,6 +806,190 @@
 						<li>Add your API key and domain in the configuration page</li>
 						<li>Test the connection to verify everything works</li>
 					</ul>
+				</div>
+			</div>
+		</div>
+
+		<!-- Facebook Lead Ads Webhook -->
+		<div class="glass-card-ios rounded-2xl p-6 shadow-xl border-2 border-blue-500/30">
+			<div class="flex items-center justify-between mb-6">
+				<div class="flex items-center space-x-3">
+					<div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+						<Webhook class="w-6 h-6 text-white" />
+					</div>
+					<div>
+						<h2 class="text-xl font-bold text-white">Facebook Lead Ads Webhook</h2>
+						<p class="text-sm text-gray-400">Real-time lead capture from Facebook campaigns</p>
+					</div>
+				</div>
+				{#if facebookWebhookStatus?.configured}
+					<div class="flex items-center space-x-2 px-3 py-1.5 bg-green-500/20 border border-green-500/50 rounded-lg">
+						<CheckCircle class="w-4 h-4 text-green-400" />
+						<span class="text-sm text-green-400 font-medium">Active</span>
+					</div>
+				{:else}
+					<div class="flex items-center space-x-2 px-3 py-1.5 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
+						<AlertTriangle class="w-4 h-4 text-yellow-400" />
+						<span class="text-sm text-yellow-400 font-medium">Setup Required</span>
+					</div>
+				{/if}
+			</div>
+
+			<div class="space-y-6">
+				<!-- Webhook URL -->
+				<div>
+					<label class="block text-sm font-medium text-gray-300 mb-2">
+						Webhook URL
+					</label>
+					<div class="flex space-x-3">
+						<input
+							type="text"
+							value={facebookWebhookUrl}
+							readonly
+							class="flex-1 px-4 py-3 bg-black border border-gray-600 rounded-lg text-white font-mono text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500"
+						/>
+						<button
+							on:click={copyFacebookWebhook}
+							class="px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors flex items-center space-x-2"
+						>
+							<Copy class="w-4 h-4" />
+							<span>{facebookWebhookCopied ? 'Copied!' : 'Copy'}</span>
+						</button>
+					</div>
+					<p class="text-xs text-gray-500 mt-2">
+						Use this URL in Facebook App Dashboard → Webhooks → Page Subscriptions
+					</p>
+				</div>
+
+				<!-- Setup Checklist -->
+				<div class="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+					<h3 class="text-sm font-semibold text-white mb-3">Setup Checklist:</h3>
+					<div class="space-y-2">
+						<div class="flex items-start space-x-3">
+							{#if facebookWebhookStatus?.envVarsSet}
+								<CheckCircle class="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+							{:else}
+								<div class="w-5 h-5 border-2 border-gray-500 rounded-full flex-shrink-0 mt-0.5"></div>
+							{/if}
+							<div>
+								<p class="text-sm text-gray-300">
+									<strong>Environment Variables:</strong> FACEBOOK_APP_SECRET & FACEBOOK_WEBHOOK_VERIFY_TOKEN
+								</p>
+								<p class="text-xs text-gray-500 mt-1">
+									{#if facebookWebhookStatus?.envVarsSet}
+										✅ Configured in Vercel
+									{:else}
+										Add these to Vercel environment variables
+									{/if}
+								</p>
+							</div>
+						</div>
+
+						<div class="flex items-start space-x-3">
+							{#if facebookWebhookStatus?.facebookConfigured}
+								<CheckCircle class="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+							{:else}
+								<div class="w-5 h-5 border-2 border-gray-500 rounded-full flex-shrink-0 mt-0.5"></div>
+							{/if}
+							<div>
+								<p class="text-sm text-gray-300">
+									<strong>Facebook Configuration:</strong> Webhook subscribed to 'leadgen' events
+								</p>
+								<p class="text-xs text-gray-500 mt-1">
+									Configure in Facebook App Dashboard → Webhooks
+								</p>
+							</div>
+						</div>
+
+						<div class="flex items-start space-x-3">
+							{#if facebookWebhookStatus?.appReviewApproved}
+								<CheckCircle class="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+							{:else}
+								<div class="w-5 h-5 border-2 border-gray-500 rounded-full flex-shrink-0 mt-0.5"></div>
+							{/if}
+							<div>
+								<p class="text-sm text-gray-300">
+									<strong>App Review:</strong> 'leads_retrieval' permission approved
+								</p>
+								<p class="text-xs text-gray-500 mt-1">
+									{#if facebookWebhookStatus?.appReviewApproved}
+										✅ App is in Live Mode
+									{:else}
+										Required for production use (works in Development Mode for testing)
+									{/if}
+								</p>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Test Connection -->
+				<div class="flex items-center space-x-3">
+					<button
+						on:click={testFacebookWebhook}
+						disabled={testingFacebookWebhook}
+						class="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50"
+					>
+						<Activity class="w-4 h-4 mr-2" />
+						{testingFacebookWebhook ? 'Testing...' : 'Test Webhook'}
+					</button>
+
+					{#if facebookWebhookTestResult}
+						{#if facebookWebhookTestResult.success}
+							<div class="flex items-center space-x-2 text-green-400">
+								<CheckCircle class="w-4 h-4" />
+								<span class="text-sm">Webhook is working correctly!</span>
+							</div>
+						{:else}
+							<div class="flex items-center space-x-2 text-red-400">
+								<AlertTriangle class="w-4 h-4" />
+								<span class="text-sm">{facebookWebhookTestResult.error}</span>
+							</div>
+						{/if}
+					{/if}
+				</div>
+
+				<!-- Features -->
+				<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+					<div class="bg-black/50 border border-blue-500/20 rounded-lg p-4">
+						<div class="flex items-center space-x-2 mb-2">
+							<Zap class="w-4 h-4 text-blue-500" />
+							<h3 class="text-sm font-semibold text-white">Instant Capture</h3>
+						</div>
+						<p class="text-xs text-gray-400">Leads arrive in &lt;1 second after form submission</p>
+					</div>
+
+					<div class="bg-black/50 border border-blue-500/20 rounded-lg p-4">
+						<div class="flex items-center space-x-2 mb-2">
+							<Activity class="w-4 h-4 text-blue-500" />
+							<h3 class="text-sm font-semibold text-white">Auto-Match Campaigns</h3>
+						</div>
+						<p class="text-xs text-gray-400">Automatically link leads to the correct campaign</p>
+					</div>
+
+					<div class="bg-black/50 border border-blue-500/20 rounded-lg p-4">
+						<div class="flex items-center space-x-2 mb-2">
+							<CheckCircle class="w-4 h-4 text-blue-500" />
+							<h3 class="text-sm font-semibold text-white">Verified Security</h3>
+						</div>
+						<p class="text-xs text-gray-400">HMAC SHA-256 signature verification</p>
+					</div>
+				</div>
+
+				<!-- Setup Guide Link -->
+				<div class="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+					<p class="text-sm text-blue-300 mb-3">
+						<strong>Complete Setup Guide:</strong> Follow our step-by-step guide to configure Facebook webhooks and start capturing leads instantly.
+					</p>
+					<a
+						href="https://github.com/MylesNdlovu/trendstec-clientflow/blob/main/docs/FACEBOOK_WEBHOOK_SETUP.md"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
+					>
+						<ExternalLink class="w-4 h-4" />
+						<span>View Setup Documentation</span>
+					</a>
 				</div>
 			</div>
 		</div>
