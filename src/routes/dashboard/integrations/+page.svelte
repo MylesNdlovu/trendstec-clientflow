@@ -35,6 +35,8 @@
 	let loadingFacebookWebhook = false;
 	let testingFacebookWebhook = false;
 	let facebookWebhookTestResult: any = null;
+	let checkingAppStatus = false;
+	let facebookAppStatus: any = null;
 
 	let showAddForm = false;
 	let showEditForm = false;
@@ -122,6 +124,23 @@
 			};
 		} finally {
 			testingFacebookWebhook = false;
+		}
+	}
+
+	async function checkFacebookAppStatus() {
+		checkingAppStatus = true;
+		facebookAppStatus = null;
+		try {
+			const response = await fetch('/api/facebook/app-status');
+			const result = await response.json();
+			facebookAppStatus = result;
+		} catch (err) {
+			facebookAppStatus = {
+				success: false,
+				error: err instanceof Error ? err.message : 'Failed to check app status'
+			};
+		} finally {
+			checkingAppStatus = false;
 		}
 	}
 
@@ -948,6 +967,72 @@
 						{/if}
 					{/if}
 				</div>
+
+				<!-- Check App Review Status -->
+				<div class="flex items-center space-x-3">
+					<button
+						on:click={checkFacebookAppStatus}
+						disabled={checkingAppStatus}
+						class="flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors disabled:opacity-50"
+					>
+						<CheckCircle class="w-4 h-4 mr-2" />
+						{checkingAppStatus ? 'Checking...' : 'Check App Review Status'}
+					</button>
+
+					{#if facebookAppStatus}
+						{#if facebookAppStatus.success}
+							<div class="flex items-center space-x-2 text-green-400">
+								<CheckCircle class="w-4 h-4" />
+								<span class="text-sm">App: {facebookAppStatus.app?.name || 'Connected'}</span>
+							</div>
+						{:else}
+							<div class="flex items-center space-x-2 text-red-400">
+								<AlertTriangle class="w-4 h-4" />
+								<span class="text-sm">{facebookAppStatus.error}</span>
+							</div>
+						{/if}
+					{/if}
+				</div>
+
+				<!-- App Status Details -->
+				{#if facebookAppStatus?.success}
+					<div class="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
+						<h3 class="text-sm font-semibold text-white mb-3">Facebook App Status:</h3>
+						<div class="space-y-2 text-sm">
+							<div class="flex justify-between">
+								<span class="text-gray-400">App Name:</span>
+								<span class="text-white font-medium">{facebookAppStatus.app?.name}</span>
+							</div>
+							<div class="flex justify-between">
+								<span class="text-gray-400">App ID:</span>
+								<span class="text-white font-mono text-xs">{facebookAppStatus.app?.id}</span>
+							</div>
+							<div class="flex justify-between">
+								<span class="text-gray-400">leads_retrieval Status:</span>
+								<span class="text-white font-medium">
+									{#if facebookAppStatus.leadsRetrievalStatus === 'granted'}
+										<span class="text-green-400">✅ Approved</span>
+									{:else if facebookAppStatus.leadsRetrievalStatus === 'declined'}
+										<span class="text-red-400">❌ Declined</span>
+									{:else}
+										<span class="text-yellow-400">⏳ Unknown - Check Dashboard</span>
+									{/if}
+								</span>
+							</div>
+						</div>
+						{#if facebookAppStatus.dashboardUrl}
+							<a
+								href={facebookAppStatus.dashboardUrl}
+								target="_blank"
+								rel="noopener noreferrer"
+								class="inline-flex items-center space-x-2 mt-4 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors text-sm"
+							>
+								<ExternalLink class="w-4 h-4" />
+								<span>View in Facebook Dashboard</span>
+							</a>
+						{/if}
+					</div>
+				{/if}
 
 				<!-- Features -->
 				<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
