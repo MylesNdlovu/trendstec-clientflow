@@ -1,26 +1,40 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { mcpClient } from '$lib/services/mcpClient';
 
-// This would connect to your MCP server for MT5 data
-// For now, returning mock data
 export const GET: RequestHandler = async ({ url }) => {
 	try {
-		// In production, this would use the MCP MT5 Playwright server
-		// const mcpResponse = await mcpClient.call('mt5_get_account_data');
+		console.log('Fetching MT5 stats from MCP server...');
 
-		// Mock data for demonstration
-		const mockData = {
-			balance: Math.floor(Math.random() * 50000) + 10000,
-			equity: Math.floor(Math.random() * 55000) + 10000,
-			profit: Math.floor(Math.random() * 4000) - 2000,
-			positions: Math.floor(Math.random() * 10),
-			orders: Math.floor(Math.random() * 5),
-			timestamp: new Date().toISOString()
+		// Get account data from MCP server
+		const accountData = await mcpClient.getAccountData();
+
+		// Format the response
+		const stats = {
+			balance: accountData.data?.balance || 0,
+			equity: accountData.data?.equity || 0,
+			profit: accountData.data?.profit || 0,
+			positions: accountData.data?.positions?.length || 0,
+			orders: accountData.data?.orders?.length || 0,
+			timestamp: new Date().toISOString(),
+			source: 'mcp-server'
 		};
 
-		return json(mockData);
+		return json(stats);
 	} catch (error) {
 		console.error('Error fetching MT5 stats:', error);
-		return json({ error: 'Failed to fetch MT5 stats' }, { status: 500 });
+
+		// Return error with fallback mock data for development
+		return json({
+			error: 'MCP server unavailable',
+			message: error instanceof Error ? error.message : 'Failed to fetch MT5 stats',
+			fallback: true,
+			balance: 0,
+			equity: 0,
+			profit: 0,
+			positions: 0,
+			orders: 0,
+			timestamp: new Date().toISOString()
+		}, { status: 503 });
 	}
 };
