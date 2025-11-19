@@ -25,17 +25,25 @@ export const GET: RequestHandler = async (event) => {
 
 		console.log('  Redirect URI:', REDIRECT_URI);
 
-		// Facebook OAuth URL with minimal permissions
-		// Only public_profile works without any setup
-		// Even 'email' requires app configuration
-		const permissions = 'public_profile';
+		// Meta Marketing API - Required permissions for ad management
+		// These permissions allow full campaign creation and management
+		const permissions = [
+			'ads_management',        // Create and manage ads, ad campaigns, ad sets, and ad accounts
+			'ads_read',              // Read ad account insights and campaigns
+			'business_management',   // Access Business Manager and ad accounts
+			'pages_read_engagement', // Read page data (for ad creatives)
+			'pages_show_list',       // List pages user manages
+			'public_profile',        // Basic profile info
+			'email'                  // User email
+		].join(',');
 
 		const authUrl = `https://www.facebook.com/v19.0/dialog/oauth?` +
 			`client_id=${FACEBOOK_APP_ID}` +
 			`&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
 			`&scope=${permissions}` +
 			`&response_type=code` +
-			`&state=${user.id}`;
+			`&state=${user.id}` +
+			`&auth_type=rerequest`;  // Force permission dialog even if previously declined
 
 		console.log('✅ Redirecting to Facebook OAuth URL:', authUrl.substring(0, 100) + '...');
 		throw redirect(302, authUrl);
